@@ -6,379 +6,369 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#080808"/>
+<meta name="theme-color" content="#000"/>
 <title>T7 Datalogger</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
-/* ═══════════════════════════════════════════════════
-   RESET & BASE
-═══════════════════════════════════════════════════ */
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{width:100%;height:100%;overflow:hidden;background:#080808}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:pan-x pan-y}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;
+  font-family:'Share Tech Mono',monospace;color:#e0e0e0;}
 
+/* ── TEMI ── */
 :root{
-  --bg:#080808; --panel:#0f0f0f; --edge:#1c1c1c;
-  --dim:rgba(255,255,255,.05); --line:rgba(255,255,255,.09);
-  --txt:#e0e0e0; --muted:#444; --muted2:#232323;
-  --spd:#ff4500; --hdg:#00cfff; --alt:#39ff14; --warm:#ffc837;
-  --gps5:#39ff14; --gps4:#a8ff4f; --gps3:#ffe033; --gps2:#ff8800; --gps1:#ff3300;
-  --r:10px;
-  --gap:clamp(5px,1vw,10px);
-  --hdr:clamp(38px,6vh,54px);
-  --tab:clamp(38px,6vh,52px);
+  --bg:#000;--panel:#0d0d0d;--edge:#1a1a1a;--line:rgba(255,255,255,.08);
+  --txt:#e0e0e0;--muted:#3a3a3a;--muted2:#1c1c1c;
+  --spd:#ff4500;--hdg:#00cfff;--alt:#39ff14;--warm:#ffc837;
+  --gps5:#39ff14;--gps4:#a8ff4f;--gps3:#ffe033;--gps2:#ff8800;--gps1:#ff3300;
 }
-.t-alba   {--bg:#0d0800;--panel:#150d00;--edge:#231500;--spd:#ff9500;--hdg:#ffdd44;--alt:#ffe599;--warm:#ff6600}
-.t-giorno {--bg:#e8edf4;--panel:#f5f7fa;--edge:#d0d8e8;--dim:rgba(0,0,0,.05);--line:rgba(0,0,0,.12);--txt:#111;--muted:#888;--muted2:#dde;--spd:#cc2200;--hdg:#0055bb;--alt:#007700;--warm:#aa6600}
-.t-tramonto{--bg:#080510;--panel:#0f0a1c;--edge:#1a1030;--spd:#ff2266;--hdg:#cc44ff;--alt:#ff8833;--warm:#ffcc22}
-.t-sera   {--bg:#080600;--panel:#0f0d00;--edge:#1a1500;--spd:#ff9900;--hdg:#ff6600;--alt:#ffdd44;--warm:#ff5500}
+.t-alba{--bg:#080400;--panel:#100800;--spd:#ff9500;--hdg:#ffdd44;--alt:#ffe599;--warm:#ff6600}
+.t-giorno{--bg:#d8dde6;--panel:#edf0f5;--edge:#c0c8d8;--line:rgba(0,0,0,.1);--txt:#0a1020;--muted:#aab0c0;--muted2:#d0d5df;--spd:#cc2200;--hdg:#0055bb;--alt:#006600;--warm:#996600}
+.t-tramonto{--bg:#040210;--panel:#08051a;--spd:#ff2266;--hdg:#cc44ff;--alt:#ff8833;--warm:#ffcc22}
+.t-sera{--bg:#040300;--panel:#0a0800;--spd:#ff9900;--hdg:#ff6600;--alt:#ffdd44;--warm:#ff5500}
 
-body{font-family:'Share Tech Mono',monospace;color:var(--txt);
-  display:flex;flex-direction:column;height:100dvh;width:100dvw;}
+body{display:flex;flex-direction:column;height:100dvh;width:100dvw;background:var(--bg);}
 
-/* ═══════════════════════════════════════════════════
-   AUTH SCREEN
-═══════════════════════════════════════════════════ */
-.auth-screen{
-  display:flex;position:fixed;inset:0;
-  background:var(--bg);z-index:900;
-  align-items:center;justify-content:center;
-  padding:clamp(16px,3vw,40px);
-}
-.auth-screen.hidden{display:none;}
-
-.auth-card{
-  background:var(--panel);border:1px solid var(--edge);border-radius:16px;
-  padding:clamp(20px,3vw,40px) clamp(20px,3vw,48px);
-  width:100%;max-width:420px;
-  display:flex;flex-direction:column;gap:clamp(12px,2vh,20px);
-}
-.auth-logo{
-  font-family:'Orbitron',sans-serif;font-weight:900;
-  font-size:clamp(1.3rem,3vw,2rem);letter-spacing:.12em;text-align:center;
-  background:linear-gradient(90deg,var(--spd),var(--warm));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.auth-sub{text-align:center;font-size:clamp(.65rem,1.2vw,.85rem);
-  color:var(--muted);letter-spacing:.08em;}
-
-/* tab switcher login / registrazione */
-.auth-tabs{display:grid;grid-template-columns:1fr 1fr;
-  background:var(--muted2);border-radius:8px;padding:3px;gap:3px;}
-.auth-tab{background:none;border:none;border-radius:6px;padding:.55em 0;
-  font-family:'Orbitron',sans-serif;font-size:clamp(.6rem,1.1vw,.8rem);
-  letter-spacing:.1em;color:var(--muted);cursor:pointer;transition:all .2s;}
-.auth-tab.on{background:var(--panel);color:var(--hdg);
-  box-shadow:0 2px 8px rgba(0,0,0,.4);}
-
-.auth-field{display:flex;flex-direction:column;gap:.4em;}
-.auth-label{font-size:clamp(.55rem,.95vw,.75rem);color:var(--muted);letter-spacing:.1em;}
-.auth-input{
-  background:var(--muted2);border:1px solid var(--edge);border-radius:8px;
-  padding:clamp(8px,1.2vh,12px) clamp(10px,1.5vw,16px);
-  color:var(--txt);font-family:'Share Tech Mono',monospace;
-  font-size:clamp(.75rem,1.4vw,1rem);outline:none;width:100%;
-  transition:border-color .2s;
-}
-.auth-input:focus{border-color:var(--hdg);}
-
-.auth-btn{
-  font-family:'Orbitron',sans-serif;font-weight:700;
-  font-size:clamp(.65rem,1.2vw,.85rem);letter-spacing:.12em;
-  padding:clamp(10px,1.6vh,14px);border:none;border-radius:8px;
-  cursor:pointer;transition:opacity .2s,transform .1s;
-}
-.auth-btn:active{transform:scale(.98);}
-.auth-btn-primary{background:var(--hdg);color:#000;}
-.auth-btn-google{
-  background:var(--muted2);border:1px solid var(--edge);color:var(--txt);
-  display:flex;align-items:center;justify-content:center;gap:.6em;
-}
-.auth-btn-google svg{width:1.1em;height:1.1em;flex-shrink:0;}
-
-.auth-divider{
-  display:flex;align-items:center;gap:.8em;
-  font-size:clamp(.55rem,.9vw,.72rem);color:var(--muted);
-}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--edge);}
-
-.auth-err{
-  background:rgba(255,69,0,.08);border:1px solid rgba(255,69,0,.3);
-  border-radius:6px;padding:.5em .8em;
-  font-size:clamp(.6rem,1vw,.78rem);color:var(--spd);
-  text-align:center;display:none;
-}
-.auth-err.on{display:block;}
-
-/* ═══════════════════════════════════════════════════
-   HEADER
-═══════════════════════════════════════════════════ */
+/* ══════════════════════════════════
+   MINI HEADER (sempre visibile)
+══════════════════════════════════ */
 .hdr{
-  height:var(--hdr);flex-shrink:0;
+  height:46px;flex-shrink:0;
   background:var(--panel);border-bottom:1px solid var(--line);
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 clamp(10px,2vw,20px);z-index:10;
+  padding:0 12px;position:relative;z-index:50;gap:8px;
 }
-.brand{
-  font-family:'Orbitron',sans-serif;font-size:clamp(11px,2.2vw,18px);
-  font-weight:900;letter-spacing:.12em;
+.brand{font-family:'Orbitron',sans-serif;font-weight:900;font-size:13px;
+  letter-spacing:.12em;white-space:nowrap;
   background:linear-gradient(90deg,var(--spd),var(--warm));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.hdr-right{display:flex;align-items:center;gap:clamp(8px,1.5vw,16px);}
-.rec-badge{
-  font-family:'Orbitron',sans-serif;font-size:clamp(8px,1.2vw,11px);
-  letter-spacing:.1em;background:rgba(255,69,0,.12);border:1px solid var(--spd);
-  border-radius:4px;padding:.2em .6em;color:var(--spd);
-  display:none;animation:recblink .9s infinite;
-}
-.rec-badge.on{display:block;}
-@keyframes recblink{0%,100%{opacity:1}50%{opacity:.4}}
-
-/* avatar/utente */
-.user-btn{
-  display:flex;align-items:center;gap:.5em;cursor:pointer;
-  background:var(--muted2);border:1px solid var(--edge);border-radius:20px;
-  padding:.2em .7em .2em .3em;transition:border-color .2s;
-}
-.user-btn:hover{border-color:var(--hdg);}
-.user-avatar{
-  width:clamp(22px,3.5vw,30px);height:clamp(22px,3.5vw,30px);
-  border-radius:50%;object-fit:cover;background:var(--hdg);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Orbitron',sans-serif;font-size:clamp(.55rem,.9vw,.75rem);
-  color:#000;font-weight:900;flex-shrink:0;overflow:hidden;
-}
-.user-avatar img{width:100%;height:100%;object-fit:cover;}
-.user-name{font-size:clamp(.55rem,.9vw,.75rem);color:var(--txt);
-  max-width:clamp(60px,10vw,120px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-/* dropdown utente */
-.user-menu{
-  position:absolute;top:calc(var(--hdr) + 4px);right:clamp(10px,2vw,20px);
-  background:var(--panel);border:1px solid var(--edge);border-radius:10px;
-  min-width:200px;z-index:200;overflow:hidden;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
-  display:none;flex-direction:column;
-}
-.user-menu.on{display:flex;}
-.user-menu-info{
-  padding:clamp(8px,1.2vh,14px) clamp(10px,1.5vw,16px);
-  border-bottom:1px solid var(--edge);
-}
-.user-menu-email{font-size:clamp(.6rem,1vw,.78rem);color:var(--muted);}
-.user-menu-name{font-size:clamp(.7rem,1.2vw,.9rem);color:var(--txt);margin-top:.2em;}
-.user-menu-item{
-  padding:clamp(8px,1.2vh,12px) clamp(10px,1.5vw,16px);
-  font-size:clamp(.6rem,1vw,.78rem);letter-spacing:.08em;
-  cursor:pointer;color:var(--muted);transition:color .15s,background .15s;
-  display:flex;align-items:center;gap:.6em;
-}
-.user-menu-item:hover{background:var(--muted2);color:var(--txt);}
-.user-menu-item.danger{color:var(--spd);}
-.user-menu-item.danger:hover{color:var(--spd);background:rgba(255,69,0,.06);}
-
-.gps-dot{
-  width:clamp(7px,1.2vw,10px);height:clamp(7px,1.2vw,10px);
-  border-radius:50%;background:var(--muted);transition:background .4s,box-shadow .4s;
-}
-.gps-dot.ok  {background:var(--gps5);box-shadow:0 0 8px var(--gps5);}
-.gps-dot.err {background:var(--spd);}
-.gps-dot.wait{background:var(--warm);animation:blink 1.2s infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-.hdr-lbl{font-size:clamp(9px,1.5vw,13px);color:var(--muted);letter-spacing:.06em;}
-
-/* ═══════════════════════════════════════════════════
-   TABS
-═══════════════════════════════════════════════════ */
-.tabs{height:var(--tab);flex-shrink:0;background:var(--panel);
-  border-bottom:1px solid var(--line);display:flex;}
-.tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-nav{display:flex;gap:2px;flex:1;justify-content:center;}
+.hdr-tab{background:none;border:none;border-bottom:2px solid transparent;
   color:var(--muted);font-family:'Orbitron',sans-serif;
-  font-size:clamp(8px,1.4vw,12px);letter-spacing:.12em;
-  cursor:pointer;transition:color .2s,border-color .2s;}
-.tab.on{color:var(--hdg);border-bottom-color:var(--hdg);}
+  font-size:11px;letter-spacing:.12em;cursor:pointer;
+  padding:0 12px;height:100%;transition:color .2s,border-color .2s;}
+.hdr-tab.on{color:var(--hdg);border-bottom-color:var(--hdg);}
+.hdr-r{display:flex;align-items:center;gap:8px;}
+.rec-badge{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.1em;
+  background:rgba(255,69,0,.15);border:1px solid var(--spd);
+  border-radius:4px;padding:2px 7px;color:var(--spd);
+  display:none;animation:recblink .9s infinite;}
+.rec-badge.on{display:block;}
+@keyframes recblink{0%,100%{opacity:1}50%{opacity:.35}}
+.gps-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);
+  transition:background .4s,box-shadow .4s;flex-shrink:0;}
+.gps-dot.ok{background:var(--gps5);box-shadow:0 0 7px var(--gps5);}
+.gps-dot.err{background:var(--spd);}
+.gps-dot.wait{background:var(--warm);animation:blink 1.2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.theme-lbl{font-size:11px;color:var(--muted);letter-spacing:.05em;}
+.user-btn{display:flex;align-items:center;gap:6px;cursor:pointer;
+  background:var(--muted2);border:1px solid var(--edge);border-radius:16px;
+  padding:3px 8px 3px 3px;}
+.u-av{width:26px;height:26px;border-radius:50%;background:var(--hdg);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;
+  color:#000;overflow:hidden;flex-shrink:0;}
+.u-av img{width:100%;height:100%;object-fit:cover;}
+.u-name{font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-/* ═══════════════════════════════════════════════════
-   MAIN / SCREENS
-═══════════════════════════════════════════════════ */
-.main{flex:1;overflow:hidden;position:relative;}
-.screen{display:none;width:100%;height:100%;overflow:hidden;}
+/* user dropdown */
+.user-menu{position:absolute;top:46px;right:14px;
+  background:var(--panel);border:1px solid var(--edge);border-radius:10px;
+  min-width:190px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6);
+  display:none;flex-direction:column;overflow:hidden;}
+.user-menu.on{display:flex;}
+.um-info{padding:10px 14px;border-bottom:1px solid var(--edge);}
+.um-name{font-size:13px;color:var(--txt);}
+.um-email{font-size:11px;color:var(--muted);margin-top:2px;}
+.um-item{padding:10px 14px;font-size:12px;letter-spacing:.07em;
+  cursor:pointer;color:var(--muted);transition:background .15s,color .15s;
+  display:flex;align-items:center;gap:8px;}
+.um-item:hover{background:var(--muted2);color:var(--txt);}
+.um-item.danger{color:var(--spd);}
+
+/* nav tab spostata nell'header */
+
+/* ══════════════════════════════════
+   MAIN AREA
+══════════════════════════════════ */
+.main{flex:1;overflow:hidden;position:relative;min-height:0;}
+
+/* ogni schermata occupa tutto */
+.screen{display:none;width:100%;height:100%;}
 .screen.on{display:flex;flex-direction:column;}
 
-/* ═══════════════════════════════════════════════════
-   DASHBOARD
-═══════════════════════════════════════════════════ */
-#s0{padding:var(--gap);}
-.dash-top{flex:1;display:grid;
-  grid-template-columns:clamp(90px,14vw,140px) 1fr clamp(90px,13vw,130px);
-  gap:var(--gap);min-height:0;}
-.panel{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:clamp(6px,1.2vh,14px) clamp(6px,1vw,12px);overflow:hidden;position:relative;}
+/* ══════════════════════════════════
+   DASH — swiper
+   P0: Bussola aeronautica + Altimetro + KM
+   P1: Dislivello + Distanza + Tempo + GPS + Meteo
+══════════════════════════════════ */
+#s0{overflow:hidden;position:relative;}
 
-/* velocità */
-.spd-panel{gap:.3em;}
-.spd-num{font-family:'Orbitron',sans-serif;font-weight:900;
-  font-size:clamp(2rem,7.5vw,5.5rem);line-height:1;color:var(--spd);
-  text-shadow:0 0 30px color-mix(in srgb,var(--spd) 60%,transparent);}
-.spd-unit{font-size:clamp(.7rem,1.4vw,1rem);color:var(--spd);opacity:.5;letter-spacing:.3em;}
-.spd-max{font-size:clamp(.55rem,1vw,.8rem);color:var(--muted);margin-top:.4em;letter-spacing:.05em;}
+.page-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  display:flex;gap:6px;z-index:10;pointer-events:none;}
+.pd{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background .3s;}
+.pd.on{background:var(--hdg);}
 
-/* centro: bussola */
-.center-panel{display:grid;grid-template-rows:1fr auto;
-  padding:0;overflow:hidden;background:var(--panel);
-  border:1px solid var(--edge);border-radius:var(--r);}
-.compass-wrap{flex:1;display:flex;align-items:center;justify-content:center;
-  padding:clamp(8px,1.5vh,18px);gap:clamp(10px,2vw,20px);min-height:0;}
-.compass-svg-wrap{aspect-ratio:1;height:min(100%,100%);
-  max-height:clamp(90px,20vh,200px);max-width:clamp(90px,20vh,200px);
-  flex-shrink:0;position:relative;}
-.compass-svg{width:100%;height:100%;}
-.needle-grp{transform-origin:50% 50%;transition:transform .35s cubic-bezier(.4,0,.2,1);}
-.compass-data{display:flex;flex-direction:column;gap:.5em;justify-content:center;}
-.compass-deg{font-family:'Orbitron',sans-serif;font-weight:900;
-  font-size:clamp(1.4rem,4vw,3rem);color:var(--hdg);line-height:1;
+.swiper{display:flex;width:200%;height:100%;
+  transition:transform .35s cubic-bezier(.4,0,.2,1);will-change:transform;}
+.page{width:50%;height:100%;flex-shrink:0;display:flex;flex-direction:column;
+  padding:10px;gap:8px;overflow:hidden;}
+
+/* ── P0: bussola + altimetro + km ── */
+.p0-layout{
+  flex:1;display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 1fr;
+  gap:8px;min-height:0;
+}
+
+/* bussola: colonna sinistra intera */
+.compass-panel{
+  grid-column:1;grid-row:1/3;
+  background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+  gap:8px;padding:14px 12px;overflow:hidden;min-height:0;
+}
+.hsi-wrap{
+  position:relative;
+  /* cerchio: quadrato che si adatta, massimo limitato dall'altezza panel */
+  width:min(100%, calc(100vh - 200px));
+  aspect-ratio:1;
+  flex-shrink:1;
+  min-height:0;
+  border-radius:50%;
+  overflow:hidden;
+  box-shadow:0 0 0 2px var(--edge), 0 0 20px rgba(0,0,0,.8);
+}
+#hsiCanvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  display:block;
+  border-radius:50%;
+}
+.hsi-readout{display:flex;gap:14px;align-items:baseline;flex-shrink:0;}
+.hsi-deg{font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(1.8rem,4.5vw,3.5rem);color:var(--hdg);line-height:1;
   text-shadow:0 0 20px color-mix(in srgb,var(--hdg) 50%,transparent);}
-.compass-dir{font-family:'Orbitron',sans-serif;font-size:clamp(1rem,2.5vw,2rem);
-  color:var(--spd);font-weight:700;}
-.compass-lbl{font-size:clamp(.6rem,.9vw,.8rem);color:var(--muted);letter-spacing:.15em;}
+.hsi-dir{font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(1.3rem,3.5vw,2.8rem);color:var(--spd);line-height:1;
+  text-shadow:0 0 15px color-mix(in srgb,var(--spd) 50%,transparent);}
+.hsi-lbl{font-family:'Orbitron',sans-serif;font-size:clamp(.5rem,.9vw,.72rem);
+  letter-spacing:.15em;color:var(--muted);flex-shrink:0;}
 
-/* info strip */
-.info-strip{border-top:1px solid var(--edge);display:grid;grid-template-columns:1fr 1fr 1fr;}
-.info-cell{padding:clamp(5px,.9vh,10px) clamp(6px,1vw,12px);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;
-  border-right:1px solid var(--edge);}
-.info-cell:last-child{border-right:none;}
-.info-label{font-size:clamp(.52rem,.85vw,.75rem);color:var(--muted);letter-spacing:.12em;}
-.info-val{font-family:'Orbitron',sans-serif;font-size:clamp(.75rem,1.4vw,1.1rem);font-weight:700;}
-.gps-bars{display:flex;align-items:flex-end;gap:clamp(2px,.3vw,4px);height:clamp(14px,2.5vh,22px);}
-.gb{border-radius:2px 2px 0 0;background:var(--muted2);transition:background .4s;}
-.gb:nth-child(1){width:clamp(4px,.6vw,7px);height:20%;}
-.gb:nth-child(2){width:clamp(4px,.6vw,7px);height:40%;}
-.gb:nth-child(3){width:clamp(4px,.6vw,7px);height:62%;}
-.gb:nth-child(4){width:clamp(4px,.6vw,7px);height:82%;}
-.gb:nth-child(5){width:clamp(4px,.6vw,7px);height:100%;}
-.gb.on{background:var(--gps-c,var(--gps5));box-shadow:0 0 5px var(--gps-c,var(--gps5));}
-.w-icon{font-size:clamp(1.1rem,2vh,1.8rem);line-height:1;}
-.w-temp{font-family:'Orbitron',sans-serif;font-size:clamp(.75rem,1.4vw,1.1rem);color:var(--warm);}
-.w-wind{font-size:clamp(.52rem,.85vw,.72rem);color:var(--muted);}
-.idle-val{color:var(--warm);}
-.idle-bar-wrap{width:80%;height:clamp(3px,.5vh,5px);background:var(--muted2);border-radius:3px;overflow:hidden;}
-.idle-bar{height:100%;border-radius:3px;background:var(--alt);width:0;transition:width .5s linear,background .5s;}
-
-/* altimetro */
-.alt-panel{gap:.3em;}
-.alt-num{font-family:'Orbitron',sans-serif;font-weight:900;
-  font-size:clamp(1.4rem,4vw,3rem);color:var(--alt);line-height:1;
+/* altimetro e km: stessa dimensione, colonna destra */
+.alt-panel, .km-panel{
+  background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;overflow:hidden;
+}
+.alt-lbl,.km-lbl{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(.55rem,1.1vw,.8rem);
+  letter-spacing:.14em;color:var(--muted);
+}
+.alt-val{font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(2.2rem,7vw,5rem);color:var(--alt);line-height:1;
   text-shadow:0 0 20px color-mix(in srgb,var(--alt) 50%,transparent);}
-.alt-unit{font-size:clamp(.58rem,.9vw,.8rem);color:var(--alt);opacity:.6;letter-spacing:.15em;}
-.alt-trend{font-size:clamp(1rem,2vw,1.8rem);color:var(--alt);opacity:.7;margin-top:.2em;}
-.alt-tape-wrap{width:clamp(32px,4vw,50px);height:clamp(60px,12vh,110px);
-  border:1px solid var(--edge);border-radius:4px;overflow:hidden;
-  position:relative;background:var(--muted2);flex-shrink:0;margin-top:.4em;}
-.alt-tape{position:absolute;left:0;right:0;transition:transform .5s;}
-.alt-tick{position:absolute;left:0;right:0;height:16px;display:flex;align-items:center;}
-.alt-tick-line{height:1px;background:var(--line);}
-.alt-tick-line.maj{background:var(--muted);}
-.alt-tick-num{font-size:5px;color:var(--muted);margin-left:2px;}
-.alt-center-line{position:absolute;left:0;right:0;top:50%;
-  height:1px;background:var(--alt);box-shadow:0 0 4px var(--alt);pointer-events:none;z-index:2;}
+.alt-unit-lbl{font-size:clamp(.5rem,.9vw,.72rem);color:var(--alt);opacity:.55;letter-spacing:.15em;}
+.km-val{font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(2.2rem,7vw,5rem);color:var(--warm);line-height:1;
+  text-shadow:0 0 20px color-mix(in srgb,var(--warm) 40%,transparent);}
 
-/* metriche */
-.dash-bottom{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);
-  gap:var(--gap);margin-top:var(--gap);height:clamp(50px,9vh,80px);}
-.metric{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);
-  border-left:3px solid var(--c,var(--muted));
-  padding:0 clamp(8px,1.2vw,14px);display:flex;flex-direction:column;justify-content:center;}
-.metric-lbl{font-size:clamp(.5rem,.85vw,.72rem);color:var(--muted);letter-spacing:.1em;margin-bottom:.15em;}
-.metric-val{font-family:'Orbitron',sans-serif;font-weight:700;
-  font-size:clamp(.8rem,1.8vw,1.4rem);color:var(--c,var(--txt));line-height:1;}
-.elev-card{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);
+/* ── P1: stats ── */
+.p1-layout{flex:1;display:grid;grid-template-rows:1fr 1fr;gap:8px;min-height:0;}
+.p1-top{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.p1-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+.big-card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;overflow:hidden;}
+.bc-lbl{font-family:'Orbitron',sans-serif;font-size:clamp(.52rem,1vw,.75rem);
+  letter-spacing:.12em;color:var(--muted);}
+.bc-val{font-family:'Orbitron',sans-serif;font-weight:900;line-height:1;}
+
+.elev-card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;
   display:grid;grid-template-columns:1fr 1px 1fr;overflow:hidden;}
-.elev-half{padding:0 clamp(6px,.9vw,12px);display:flex;flex-direction:column;justify-content:center;}
-.elev-lbl{font-size:clamp(.48rem,.8vw,.68rem);color:var(--muted);letter-spacing:.08em;margin-bottom:.1em;}
-.elev-val{font-family:'Orbitron',sans-serif;font-size:clamp(.72rem,1.5vw,1.15rem);font-weight:700;line-height:1;}
-.elev-pos{color:#39ff14;} .elev-neg{color:#ff5533;}
+.elev-half{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.elev-lbl{font-family:'Orbitron',sans-serif;font-size:clamp(.48rem,.9vw,.68rem);
+  letter-spacing:.09em;color:var(--muted);}
+.elev-val{font-family:'Orbitron',sans-serif;font-weight:900;line-height:1;
+  font-size:clamp(1.3rem,4vw,2.8rem);}
+.ep{color:#39ff14;text-shadow:0 0 14px rgba(57,255,20,.4);}
+.en{color:#ff5533;text-shadow:0 0 14px rgba(255,85,51,.4);}
 .elev-div{background:var(--edge);}
 
-/* weather alert */
-.w-alert-bar{display:none;position:fixed;top:var(--hdr);left:0;right:0;
-  background:rgba(255,50,0,.92);border-bottom:1px solid rgba(255,120,0,.6);
-  padding:.4em 1em;z-index:100;text-align:center;cursor:pointer;
-  font-size:clamp(.65rem,1.2vw,.9rem);letter-spacing:.05em;animation:slidein .3s ease;}
-.w-alert-bar.on{display:block;}
+.gps-card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px;}
+.gps-bars-big{display:flex;align-items:flex-end;gap:clamp(3px,.5vw,6px);height:clamp(20px,3.5vh,32px);}
+.gb{border-radius:2px 2px 0 0;background:var(--muted2);transition:background .4s;
+  width:clamp(6px,.9vw,11px);}
+.gb:nth-child(1){height:20%}.gb:nth-child(2){height:40%}
+.gb:nth-child(3){height:62%}.gb:nth-child(4){height:82%}.gb:nth-child(5){height:100%}
+.gb.on{background:var(--gps-c,var(--gps5));box-shadow:0 0 5px var(--gps-c,var(--gps5));}
+.gps-qlbl{font-family:'Orbitron',sans-serif;font-size:clamp(.55rem,1vw,.78rem);
+  letter-spacing:.1em;color:var(--gps-c,var(--muted));}
+.gps-acc{font-size:clamp(.45rem,.78vw,.65rem);color:var(--muted);}
+
+.meteo-card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;}
+.met-icon{font-size:clamp(1.4rem,3vw,2.2rem);line-height:1;}
+.met-temp{font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(1.1rem,2.8vw,2rem);color:var(--warm);line-height:1;}
+.met-wind{font-size:clamp(.5rem,.88vw,.7rem);color:var(--muted);}
+.met-desc{font-size:clamp(.46rem,.8vw,.66rem);color:var(--muted);font-style:italic;text-align:center;}
+
+/* ══════════════════════════════════
+   LOGGER SCREEN
+══════════════════════════════════ */
+#s1{padding:10px;gap:8px;overflow-y:auto;}
+.log-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0;}
+.log-panel{background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+.lp-title{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.15em;color:var(--muted);}
+.lp-hdr{display:flex;justify-content:space-between;align-items:center;}
+.lp-badge{font-size:11px;}
+.info-box{background:var(--muted2);border-radius:8px;padding:9px 12px;
+  font-size:12px;color:var(--muted);line-height:1.6;}
+.info-box b{color:var(--txt);}
+.notes-lbl{font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:4px;}
+.notes-in{background:var(--muted2);border:1px solid var(--edge);border-radius:8px;
+  padding:8px 12px;color:var(--txt);font-family:'Share Tech Mono',monospace;
+  font-size:13px;outline:none;width:100%;}
+.notes-in:focus{border-color:var(--hdg);}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.stat-box{background:var(--muted2);border-radius:8px;padding:8px;text-align:center;}
+.stat-v{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:var(--hdg);}
+.stat-l{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:.07em;}
+.saved-msg{background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.25);
+  border-radius:8px;padding:8px 12px;font-size:12px;color:#39ff14;display:none;}
+.stop-btn{
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:11px;
+  letter-spacing:.1em;padding:5px 10px;border-radius:7px;cursor:pointer;
+  background:rgba(255,69,0,.12);border:1px solid rgba(255,69,0,.4);
+  color:var(--spd);white-space:nowrap;transition:background .2s,transform .1s;
+  display:none;
+}
+.stop-btn.on{display:block;}
+.stop-btn:active{transform:scale(.97);background:rgba(255,69,0,.25);}
+.live-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:clamp(13px,1.8vw,17px);}
+.lk{color:var(--muted);white-space:nowrap;}
+.lv{font-family:'Orbitron',sans-serif;font-size:clamp(15px,2.2vw,20px);font-weight:700;}
+
+/* ══════════════════════════════════
+   HISTORY SCREEN
+══════════════════════════════════ */
+#s2{padding:10px;}
+.hist-wrap{flex:1;overflow-y:auto;}
+.hist-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.2em;
+  color:var(--muted);margin-bottom:8px;}
+.slist{display:flex;flex-direction:column;gap:6px;}
+.scard{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden;}
+.scard.open{border-color:var(--hdg);}
+.shdr{display:flex;align-items:center;gap:8px;
+  padding:10px 14px;cursor:pointer;}
+.sdate{font-family:'Orbitron',sans-serif;font-size:11px;flex:1;letter-spacing:.03em;}
+.pills{display:flex;gap:4px;flex-wrap:wrap;}
+.pill{background:var(--muted2);border-radius:3px;padding:2px 7px;font-size:9px;letter-spacing:.04em;}
+.sbody{padding:10px 14px;border-top:1px solid var(--edge);
+  display:flex;flex-direction:column;gap:7px;}
+.smeta{display:flex;gap:12px;font-size:11px;color:var(--muted);flex-wrap:wrap;}
+.smeta b{color:var(--txt);}
+.snotes{font-size:12px;color:var(--warm);font-style:italic;}
+.sbtns{display:flex;gap:6px;}
+.sbtn{flex:1;padding:7px;background:var(--muted2);border:1px solid var(--edge);
+  border-radius:8px;color:var(--txt);font-family:'Orbitron',sans-serif;
+  font-size:10px;letter-spacing:.06em;cursor:pointer;}
+.sbtn.del{color:var(--spd);border-color:rgba(255,69,0,.3);flex:0 0 auto;padding:7px 12px;}
+
+/* ══════════════════════════════════
+   AUTH SCREEN
+══════════════════════════════════ */
+.auth-screen{display:flex;position:fixed;inset:0;background:var(--bg);z-index:900;
+  align-items:center;justify-content:center;padding:20px;}
+.auth-screen.hidden{display:none;}
+.auth-card{background:var(--panel);border:1px solid var(--edge);border-radius:16px;
+  padding:28px 32px;width:100%;max-width:400px;
+  display:flex;flex-direction:column;gap:16px;}
+.auth-logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;
+  letter-spacing:.12em;text-align:center;
+  background:linear-gradient(90deg,var(--spd),var(--warm));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.auth-sub{text-align:center;font-size:12px;color:var(--muted);letter-spacing:.08em;}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;
+  background:var(--muted2);border-radius:8px;padding:3px;gap:3px;}
+.auth-tab{background:none;border:none;border-radius:6px;padding:8px 0;
+  font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.1em;
+  color:var(--muted);cursor:pointer;transition:all .2s;}
+.auth-tab.on{background:var(--panel);color:var(--hdg);box-shadow:0 2px 8px rgba(0,0,0,.4);}
+.auth-field{display:flex;flex-direction:column;gap:5px;}
+.auth-label{font-size:10px;color:var(--muted);letter-spacing:.1em;}
+.auth-input{background:var(--muted2);border:1px solid var(--edge);border-radius:8px;
+  padding:11px 14px;color:var(--txt);font-family:'Share Tech Mono',monospace;
+  font-size:14px;outline:none;width:100%;transition:border-color .2s;}
+.auth-input:focus{border-color:var(--hdg);}
+.auth-btn{font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;
+  letter-spacing:.12em;padding:12px;border:none;border-radius:8px;cursor:pointer;
+  transition:opacity .2s,transform .1s;}
+.auth-btn:active{transform:scale(.98);}
+.auth-btn-primary{background:var(--hdg);color:#000;}
+.auth-btn-google{background:var(--muted2);border:1px solid var(--edge);color:var(--txt);
+  display:flex;align-items:center;justify-content:center;gap:8px;}
+.auth-btn-google svg{width:16px;height:16px;flex-shrink:0;}
+.auth-divider{display:flex;align-items:center;gap:10px;
+  font-size:11px;color:var(--muted);}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--edge);}
+.auth-err{background:rgba(255,69,0,.08);border:1px solid rgba(255,69,0,.3);
+  border-radius:6px;padding:7px 10px;font-size:11px;color:var(--spd);
+  text-align:center;display:none;}
+.auth-err.on{display:block;}
+
+/* ══════════════════════════════════
+   WEATHER ALERT
+══════════════════════════════════ */
+.w-alert{display:none;position:fixed;top:42px;left:0;right:0;
+  background:rgba(255,50,0,.93);border-bottom:1px solid rgba(255,120,0,.6);
+  padding:7px 14px;z-index:100;text-align:center;cursor:pointer;font-size:13px;
+  animation:slidein .3s ease;}
+.w-alert.on{display:block;}
 @keyframes slidein{from{transform:translateY(-100%)}to{transform:translateY(0)}}
 
-/* ═══════════════════════════════════════════════════
-   LOGGER SCREEN
-═══════════════════════════════════════════════════ */
-#s1{padding:var(--gap);}
-.log-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);min-height:0;}
-.log-panel{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);
-  padding:clamp(8px,1.5vh,16px) clamp(10px,1.5vw,18px);
-  display:flex;flex-direction:column;gap:clamp(6px,1vh,12px);overflow-y:auto;}
-.log-title{font-family:'Orbitron',sans-serif;font-size:clamp(.65rem,1.1vw,.9rem);
-  letter-spacing:.15em;color:var(--muted);}
-.log-hdr{display:flex;justify-content:space-between;align-items:center;}
-.log-badge{font-size:clamp(.6rem,1vw,.82rem);}
-.info-box{background:var(--muted2);border-radius:6px;
-  padding:clamp(5px,.9vh,10px) clamp(8px,1.2vw,14px);
-  font-size:clamp(.62rem,1.1vw,.85rem);color:var(--muted);line-height:1.5;}
-.info-box b{color:var(--txt);}
-.notes-lbl{font-size:clamp(.55rem,.9vw,.75rem);color:var(--muted);
-  letter-spacing:.1em;margin-bottom:.3em;}
-.notes-in{background:var(--muted2);border:1px solid var(--edge);border-radius:6px;
-  padding:clamp(5px,.8vh,9px) clamp(8px,1.2vw,12px);
-  color:var(--txt);font-family:'Share Tech Mono',monospace;
-  font-size:clamp(.7rem,1.3vw,1rem);outline:none;width:100%;}
-.notes-in:focus{border-color:var(--hdg);}
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(4px,.7vw,8px);}
-.stat-box{background:var(--muted2);border-radius:6px;padding:clamp(5px,.8vh,10px);text-align:center;}
-.stat-v{font-family:'Orbitron',sans-serif;font-size:clamp(.7rem,1.5vw,1.1rem);font-weight:700;color:var(--hdg);}
-.stat-l{font-size:clamp(.5rem,.8vw,.68rem);color:var(--muted);margin-top:.2em;letter-spacing:.07em;}
-.saved-msg{background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.25);
-  border-radius:6px;padding:clamp(5px,.8vh,9px) clamp(8px,1.2vw,12px);
-  font-size:clamp(.62rem,1.1vw,.85rem);color:#39ff14;display:none;}
-.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:.2em clamp(8px,1.2vw,16px);
-  font-size:clamp(.6rem,1.1vw,.85rem);}
-.lk{color:var(--muted);} .lv{font-family:'Orbitron',sans-serif;font-size:clamp(.58rem,1vw,.8rem);font-weight:700;}
+/* ══════════════════════════════════
+   GPS HELP MODAL
+══════════════════════════════════ */
+.gps-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+  z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.gps-modal.on{display:flex;}
+.gps-modal-card{background:var(--panel);border:1px solid var(--edge);border-radius:16px;
+  max-width:460px;width:100%;padding:24px 28px;
+  display:flex;flex-direction:column;gap:16px;}
+.gps-modal-title{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:.08em;color:var(--warm);}
+.gps-modal-body{font-size:13px;color:var(--muted);line-height:1.8;}
+.gps-modal-body ol{padding-left:1.3em;margin:.5em 0;display:flex;flex-direction:column;gap:4px;}
+.gps-modal-body li{color:var(--txt);}
+.gps-modal-body strong{color:var(--hdg);}
+.gps-modal-btns{display:flex;gap:8px;}
+.gps-modal-btns button{flex:1;font-family:'Orbitron',sans-serif;font-size:12px;
+  letter-spacing:.1em;padding:11px;border-radius:8px;cursor:pointer;font-weight:700;}
+.gps-retry{background:var(--hdg);color:#000;border:none;}
+.gps-settings{background:var(--muted2);color:var(--txt);border:1px solid var(--edge);}
+.gps-manual{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;}
+.gps-manual strong{color:var(--txt);}
 
-/* ═══════════════════════════════════════════════════
-   HISTORY SCREEN
-═══════════════════════════════════════════════════ */
-#s2{padding:var(--gap);}
-.hist-wrap{flex:1;overflow-y:auto;}
-.hist-title{font-family:'Orbitron',sans-serif;font-size:clamp(.6rem,1vw,.8rem);
-  letter-spacing:.2em;color:var(--muted);margin-bottom:var(--gap);}
-.slist{display:flex;flex-direction:column;gap:clamp(4px,.7vh,8px);}
-.scard{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);overflow:hidden;}
-.scard.open{border-color:var(--hdg);}
-.shdr{display:flex;align-items:center;gap:.6em;
-  padding:clamp(6px,1vh,10px) clamp(10px,1.5vw,16px);cursor:pointer;}
-.sdate{font-family:'Orbitron',sans-serif;font-size:clamp(.6rem,1.1vw,.85rem);flex:1;letter-spacing:.03em;}
-.pills{display:flex;gap:.3em;flex-wrap:wrap;}
-.pill{background:var(--muted2);border-radius:3px;padding:.1em .5em;
-  font-size:clamp(.5rem,.8vw,.68rem);letter-spacing:.04em;}
-.sbody{padding:clamp(6px,1vh,10px) clamp(10px,1.5vw,16px);
-  border-top:1px solid var(--edge);display:flex;flex-direction:column;gap:clamp(5px,.8vh,9px);}
-.smeta{display:flex;gap:1em;font-size:clamp(.58rem,1vw,.8rem);color:var(--muted);flex-wrap:wrap;}
-.smeta b{color:var(--txt);}
-.snotes{font-size:clamp(.62rem,1.1vw,.85rem);color:var(--warm);font-style:italic;}
-.sbtns{display:flex;gap:.4em;}
-.sbtn{flex:1;padding:clamp(4px,.7vh,7px);background:var(--muted2);
-  border:1px solid var(--edge);border-radius:6px;color:var(--txt);
-  font-family:'Orbitron',sans-serif;font-size:clamp(.5rem,.85vw,.72rem);
-  letter-spacing:.06em;cursor:pointer;}
-.sbtn.del{color:var(--spd);border-color:rgba(255,69,0,.3);flex:0 0 auto;padding-left:.8em;padding-right:.8em;}
+/* profile modal */
+.prof-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:800;align-items:center;justify-content:center;padding:20px;}
+.prof-modal.on{display:flex;}
 
 /* portrait */
 .portrait-lock{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;
-  flex-direction:column;align-items:center;justify-content:center;gap:1.5em;
-  font-family:'Orbitron',sans-serif;font-size:clamp(.9rem,2vw,1.3rem);
-  color:var(--muted);text-align:center;letter-spacing:.08em;}
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  font-family:'Orbitron',sans-serif;font-size:14px;color:var(--muted);
+  text-align:center;letter-spacing:.08em;}
 .portrait-lock .icon{font-size:3em;animation:rot 2s ease-in-out infinite;}
 @keyframes rot{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
 @media(orientation:portrait){.portrait-lock{display:flex;}}
@@ -388,22 +378,18 @@ body{font-family:'Share Tech Mono',monospace;color:var(--txt);
 
 <div class="portrait-lock"><div class="icon">📱</div>RUOTA IL DISPOSITIVO</div>
 
-<!-- ═════════════════════════════════════════════════
-     AUTH SCREEN
-═════════════════════════════════════════════════ -->
+<!-- AUTH -->
 <div class="auth-screen" id="authScreen">
   <div class="auth-card">
     <div class="auth-logo">T7 DATALOGGER</div>
     <div class="auth-sub">GPS · DATALOG · MOTO</div>
-
     <div class="auth-tabs">
-      <button class="auth-tab on" id="tabLogin"   onclick="authMode('login')">ACCEDI</button>
+      <button class="auth-tab on" id="tabLogin"    onclick="authMode('login')">ACCEDI</button>
       <button class="auth-tab"    id="tabRegister" onclick="authMode('register')">REGISTRATI</button>
     </div>
-
     <div class="auth-field" id="fieldName" style="display:none">
-      <div class="auth-label">NOME (visualizzato nell'app)</div>
-      <input class="auth-input" id="inName" type="text" placeholder="Es. Marco"/>
+      <div class="auth-label">NOME UTENTE</div>
+      <input class="auth-input" id="inName" type="text" placeholder="Es. Marco" autocomplete="name"/>
     </div>
     <div class="auth-field">
       <div class="auth-label">EMAIL</div>
@@ -417,179 +403,195 @@ body{font-family:'Share Tech Mono',monospace;color:var(--txt);
       <div class="auth-label">CONFERMA PASSWORD</div>
       <input class="auth-input" id="inPass2" type="password" placeholder="••••••••"/>
     </div>
-
     <div class="auth-err" id="authErr"></div>
-
     <button class="auth-btn auth-btn-primary" id="authMainBtn" onclick="doEmailAuth()">ACCEDI</button>
-
     <div class="auth-divider">oppure</div>
-
     <button class="auth-btn auth-btn-google" onclick="doGoogleAuth()">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       CONTINUA CON GOOGLE
     </button>
   </div>
 </div>
 
-<!-- ═════════════════════════════════════════════════
-     APP
-═════════════════════════════════════════════════ -->
-<div class="w-alert-bar" id="wAlert" onclick="this.classList.remove('on')">
+<!-- WEATHER ALERT -->
+<div class="w-alert" id="wAlert" onclick="this.classList.remove('on')">
   ⚠️ <span id="wAlertTxt"></span>
 </div>
 
-<div class="hdr">
-  <div class="brand">T7 DATALOGGER</div>
-  <div class="hdr-right">
-    <div class="rec-badge" id="recBadge">● REC</div>
-    <span class="hdr-lbl" id="themeLbl">🌙 NOTTE</span>
-    <div class="gps-dot wait" id="gpsDot"></div>
-    <!-- User button -->
-    <div class="user-btn" id="userBtn" onclick="toggleUserMenu()">
-      <div class="user-avatar" id="userAvatar">?</div>
-      <span class="user-name" id="userName">—</span>
+<!-- GPS HELP MODAL -->
+<div class="gps-modal" id="gpsModal">
+  <div class="gps-modal-card">
+    <div class="gps-modal-title" id="gpsModalTitle">📍 GPS</div>
+    <div class="gps-modal-body" id="gpsModalBody"></div>
+    <div class="gps-modal-btns">
+      <button class="gps-retry" onclick="retryGPS()">RIPROVA</button>
+      <button class="gps-settings" onclick="openChromeSettings()">IMPOSTAZIONI</button>
+    </div>
+    <div class="gps-manual">Percorso: <strong>Impostazioni → App → Chrome → Permessi → Posizione → Consenti sempre</strong></div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="prof-modal" id="profModal">
+  <div class="auth-card" style="max-width:400px">
+    <div style="font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:.12em;color:var(--hdg)">IMPOSTAZIONI</div>
+    <div class="auth-field">
+      <div class="auth-label">NOME</div>
+      <input class="auth-input" id="profName" type="text"/>
+    </div>
+    <div class="auth-field">
+      <div class="auth-label">EMAIL PRINCIPALE (riceve sempre)</div>
+      <input class="auth-input" id="profEmail" type="email"/>
+    </div>
+    <!-- Email extra -->
+    <div>
+      <div class="auth-label" style="margin-bottom:6px">EMAIL EXTRA (opzionali)</div>
+      <div id="extraEmailList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
+      <button onclick="addExtraEmail()" style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.1em;padding:6px 12px;border-radius:7px;cursor:pointer;background:var(--muted2);border:1px solid var(--edge);color:var(--hdg)">+ AGGIUNGI EMAIL</button>
+    </div>
+    <div class="auth-err" id="profErr"></div>
+    <div style="display:flex;gap:8px">
+      <button class="auth-btn auth-btn-primary" style="flex:1" onclick="saveProfile()">SALVA</button>
+      <button class="auth-btn" style="flex:0 0 auto;background:var(--muted2);color:var(--muted);border:1px solid var(--edge)" onclick="closeProfModal()">✕</button>
     </div>
   </div>
 </div>
 
-<!-- User dropdown menu -->
-<div class="user-menu" id="userMenu">
-  <div class="user-menu-info">
-    <div class="user-menu-name" id="menuName">—</div>
-    <div class="user-menu-email" id="menuEmail">—</div>
+<!-- HEADER -->
+<div class="hdr">
+  <div class="brand">DZ7618</div>
+  <div class="hdr-nav">
+    <button class="hdr-tab on" id="ht0" onclick="goTab(0)">DASH</button>
+    <button class="hdr-tab"    id="ht1" onclick="goTab(1)">LOGGER</button>
+    <button class="hdr-tab"    id="ht2" onclick="goTab(2)">HISTORY</button>
   </div>
-  <div class="user-menu-item" onclick="openProfile()">⚙️ &nbsp;Impostazioni</div>
-  <div class="user-menu-item danger" onclick="doSignOut()">⎋ &nbsp;Esci</div>
+  <div class="hdr-r">
+    <button class="stop-btn" id="stopBtn" onclick="manualStop()">⏹ STOP</button>
+    <div class="rec-badge" id="recBadge">● REC</div>
+    <span class="theme-lbl" id="themeLbl">🌙</span>
+    <div class="gps-dot wait" id="gpsDot"></div>
+    <div class="user-btn" id="userBtn" onclick="toggleUserMenu()">
+      <div class="u-av" id="uAv">?</div>
+      <span class="u-name" id="uName">—</span>
+    </div>
+  </div>
 </div>
 
-<div class="tabs">
-  <button class="tab on" onclick="goTab(0)">DASH</button>
-  <button class="tab"    onclick="goTab(1)">LOGGER</button>
-  <button class="tab"    onclick="goTab(2)">HISTORY</button>
+<!-- USER MENU -->
+<div class="user-menu" id="userMenu">
+  <div class="um-info">
+    <div class="um-name" id="umName">—</div>
+    <div class="um-email" id="umEmail">—</div>
+  </div>
+  <div class="um-item" onclick="openProfModal()">⚙️ Impostazioni</div>
+  <div class="um-item danger" onclick="doSignOut()">⎋ Esci</div>
 </div>
 
+<!-- MAIN -->
 <div class="main">
 
-  <!-- DASHBOARD -->
+  <!-- ══ DASHBOARD ══ -->
   <div class="screen on" id="s0">
-    <div class="dash-top">
-      <div class="panel spd-panel">
-        <div class="spd-num" id="spdNum">0</div>
-        <div class="spd-unit">KM/H</div>
-        <div class="spd-max" id="spdMax"></div>
-      </div>
+    <!-- dots -->
+    <div class="page-dots">
+      <div class="pd on" id="pd0"></div>
+      <div class="pd"    id="pd1"></div>
+    </div>
 
-      <div class="center-panel">
-        <div class="compass-wrap">
-          <div class="compass-svg-wrap">
-            <svg class="compass-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50" cy="50" r="48" fill="none" stroke="var(--line)" stroke-width="1"/>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--dim)" stroke-width=".5"/>
-              <g stroke="var(--muted)" stroke-width="1">
-                <line x1="50" y1="2"  x2="50" y2="10"/>
-                <line x1="50" y1="90" x2="50" y2="98"/>
-                <line x1="2"  y1="50" x2="10" y2="50"/>
-                <line x1="90" y1="50" x2="98" y2="50"/>
-              </g>
-              <g stroke="var(--muted2)" stroke-width=".6">
-                <line x1="84.9" y1="15.1" x2="79.9" y2="20.1"/>
-                <line x1="15.1" y1="15.1" x2="20.1" y2="20.1"/>
-                <line x1="15.1" y1="84.9" x2="20.1" y2="79.9"/>
-                <line x1="84.9" y1="84.9" x2="79.9" y2="79.9"/>
-              </g>
-              <text x="50" y="13"  text-anchor="middle" font-family="Orbitron" font-size="9" font-weight="900" fill="var(--spd)">N</text>
-              <text x="50" y="96"  text-anchor="middle" font-family="Orbitron" font-size="7" fill="var(--muted)">S</text>
-              <text x="94" y="54"  text-anchor="middle" font-family="Orbitron" font-size="7" fill="var(--muted)">E</text>
-              <text x="6"  y="54"  text-anchor="middle" font-family="Orbitron" font-size="7" fill="var(--muted)">O</text>
-              <g class="needle-grp" id="needleGrp">
-                <polygon points="50,12 53.5,50 50,48 46.5,50" fill="var(--spd)" filter="drop-shadow(0 0 4px var(--spd))"/>
-                <polygon points="50,88 53.5,50 50,52 46.5,50" fill="var(--muted)"/>
-                <circle cx="50" cy="50" r="4" fill="var(--warm)" filter="drop-shadow(0 0 3px var(--warm))"/>
-              </g>
-            </svg>
-          </div>
-          <div class="compass-data">
-            <div class="compass-deg" id="cmpDeg">0°</div>
-            <div class="compass-dir" id="cmpDir">N</div>
-            <div class="compass-lbl">HEADING</div>
-          </div>
-        </div>
-        <div class="info-strip">
-          <div class="info-cell" id="weatherCell">
-            <div class="info-label">METEO</div>
-            <div class="info-val" style="font-size:clamp(.65rem,1.1vw,.85rem);color:var(--muted)">—</div>
-          </div>
-          <div class="info-cell">
-            <div class="info-label">SEGNALE GPS</div>
-            <div class="gps-bars">
-              <div class="gb" id="gb1"></div><div class="gb" id="gb2"></div>
-              <div class="gb" id="gb3"></div><div class="gb" id="gb4"></div>
-              <div class="gb" id="gb5"></div>
+    <div class="swiper" id="swiper">
+
+      <!-- PAGINA 0: BUSSOLA + ALTIMETRO + KM -->
+      <div class="page">
+        <div class="p0-layout">
+          <!-- Bussola HSI -->
+          <div class="compass-panel">
+            <div class="hsi-wrap">
+              <canvas id="hsiCanvas"></canvas>
             </div>
-            <div class="info-val" id="gpsQlbl" style="font-size:clamp(.55rem,.9vw,.75rem);color:var(--muted)">—</div>
+            <div class="hsi-readout">
+              <div class="hsi-deg" id="cmpDeg">0°</div>
+              <div class="hsi-dir" id="cmpDir">N</div>
+            </div>
+            <div class="hsi-lbl">HEADING</div>
           </div>
-          <div class="info-cell">
-            <div class="info-label">FERMO DA</div>
-            <div class="info-val idle-val" id="idleVal">—</div>
-            <div class="idle-bar-wrap"><div class="idle-bar" id="idleBar"></div></div>
-            <div class="info-label" style="margin-top:.2em">AUTO STOP 60s</div>
+          <!-- Quota: cella (1,2) della griglia -->
+          <div class="alt-panel">
+            <div class="alt-lbl">QUOTA</div>
+            <div class="alt-val" id="altNum">0</div>
+            <div class="alt-unit-lbl">M SLM</div>
+          </div>
+          <!-- KM: cella (2,2) della griglia -->
+          <div class="km-panel">
+            <div class="km-lbl">KM PERCORSI</div>
+            <div class="km-val" id="mDist">0 m</div>
           </div>
         </div>
       </div>
 
-      <div class="panel alt-panel">
-        <div class="alt-num" id="altNum">0</div>
-        <div class="alt-unit">M SLM</div>
-        <div class="alt-trend" id="altTrend"></div>
-        <div class="alt-tape-wrap">
-          <div class="alt-tape" id="altTape"></div>
-          <div class="alt-center-line"></div>
+      <!-- PAGINA 1: STATS + GPS + METEO -->
+      <div class="page">
+        <div class="p1-layout">
+          <!-- riga superiore: dislivello + (distanza | tempo) -->
+          <div class="p1-top">
+            <div class="elev-card">
+              <div class="elev-half">
+                <div class="elev-lbl">▲ SALITA</div>
+                <div class="elev-val ep" id="elevPos">0m</div>
+              </div>
+              <div class="elev-div"></div>
+              <div class="elev-half">
+                <div class="elev-lbl">▼ DISCESA</div>
+                <div class="elev-val en" id="elevNeg">0m</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-rows:1fr 1fr;gap:8px;">
+              <div class="big-card">
+                <div class="bc-lbl">DISTANZA</div>
+                <div class="bc-val" style="color:var(--warm);font-size:clamp(1.1rem,3.2vw,2.4rem)" id="mDistB">0 m</div>
+              </div>
+              <div class="big-card">
+                <div class="bc-lbl">TEMPO</div>
+                <div class="bc-val" style="color:var(--hdg);font-size:clamp(.9rem,2.8vw,2rem)" id="mTime">00:00:00</div>
+              </div>
+            </div>
+          </div>
+          <!-- riga inferiore: GPS + meteo -->
+          <div class="p1-bottom">
+            <div class="gps-card">
+              <div class="bc-lbl">SEGNALE GPS</div>
+              <div class="gps-bars-big">
+                <div class="gb" id="gb1"></div><div class="gb" id="gb2"></div>
+                <div class="gb" id="gb3"></div><div class="gb" id="gb4"></div>
+                <div class="gb" id="gb5"></div>
+              </div>
+              <div class="gps-qlbl" id="gpsQ">—</div>
+              <div class="gps-acc" id="gpsAcc">—</div>
+            </div>
+            <div class="meteo-card">
+              <div class="met-icon" id="metIcon">—</div>
+              <div class="met-temp" id="metTemp">—</div>
+              <div class="met-wind" id="metWind">— km/h vento</div>
+              <div class="met-desc" id="metDesc">—</div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="dash-bottom">
-      <div class="metric" style="--c:var(--alt)">
-        <div class="metric-lbl">TEMPO</div>
-        <div class="metric-val" id="mTime">00:00:00</div>
-      </div>
-      <div class="metric" style="--c:var(--warm)">
-        <div class="metric-lbl">DISTANZA</div>
-        <div class="metric-val" id="mDist">0 m</div>
-      </div>
-      <div class="elev-card">
-        <div class="elev-half">
-          <div class="elev-lbl">▲ SALITA</div>
-          <div class="elev-val elev-pos" id="elevPos">0 m</div>
-        </div>
-        <div class="elev-div"></div>
-        <div class="elev-half">
-          <div class="elev-lbl">▼ DISCESA</div>
-          <div class="elev-val elev-neg" id="elevNeg">0 m</div>
-        </div>
-      </div>
-      <div class="metric" style="--c:var(--spd)">
-        <div class="metric-lbl">VEL. MAX</div>
-        <div class="metric-val" id="mMaxSpd">0 km/h</div>
-      </div>
-    </div>
-  </div>
+    </div><!-- /swiper -->
+  </div><!-- /s0 -->
 
-  <!-- LOGGER -->
+  <!-- ══ LOGGER ══ -->
   <div class="screen" id="s1">
     <div class="log-grid">
       <div class="log-panel">
-        <div class="log-hdr">
-          <div class="log-title">DATA LOGGER</div>
-          <div class="log-badge" id="fbBadge">—</div>
+        <div class="lp-hdr">
+          <div class="lp-title">DATA LOGGER</div>
+          <div class="lp-badge" id="fbBadge">—</div>
         </div>
-        <div class="info-box">
-          🤖 <b>Auto-start</b> a >5 km/h &nbsp;·&nbsp; <b>Auto-stop</b> dopo 60s fermo
+        <div class="info-box">🤖 <b>Auto-start</b> >5km/h · <b>Stop</b> 60s fermo</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <button onclick="chooseFolder()" style="font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:.08em;padding:7px 12px;border-radius:8px;cursor:pointer;background:var(--muted2);border:1px solid var(--edge);color:var(--hdg);white-space:nowrap;">📁 SCEGLI CARTELLA</button>
+          <span id="folderName" style="font-size:11px;color:var(--muted)">nessuna cartella scelta</span>
         </div>
         <div>
           <div class="notes-lbl">NOTE SESSIONE</div>
@@ -604,7 +606,7 @@ body{font-family:'Share Tech Mono',monospace;color:var(--txt);
         <div class="saved-msg" id="savedMsg"></div>
       </div>
       <div class="log-panel">
-        <div class="log-title">● LIVE</div>
+        <div class="lp-title">● LIVE</div>
         <div class="live-grid">
           <span class="lk">Velocità</span><span class="lv" id="lvSpd">—</span>
           <span class="lk">Quota</span><span class="lv" id="lvAlt">—</span>
@@ -614,13 +616,13 @@ body{font-family:'Share Tech Mono',monospace;color:var(--txt);
           <span class="lk">Discesa</span><span class="lv" id="lvEN">—</span>
           <span class="lk">Lat</span><span class="lv" id="lvLat">—</span>
           <span class="lk">Lon</span><span class="lv" id="lvLon">—</span>
-          <span class="lk">Email</span><span class="lv" id="lvEmail" style="font-size:clamp(.48rem,.8vw,.65rem)">—</span>
+          <span class="lk">Email</span><span class="lv" id="lvEmail" style="font-size:9px">—</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- HISTORY -->
+  <!-- ══ HISTORY ══ -->
   <div class="screen" id="s2">
     <div class="hist-wrap">
       <div class="hist-title">CRONOLOGIA SESSIONI</div>
@@ -630,573 +632,776 @@ body{font-family:'Share Tech Mono',monospace;color:var(--txt);
 
 </div><!-- /main -->
 
-<!-- ═════════════════════════════════════════════════
-     PROFILE MODAL
-═════════════════════════════════════════════════ -->
-<div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:800;align-items:center;justify-content:center;">
-  <div class="auth-card" style="max-width:380px">
-    <div style="font-family:'Orbitron',sans-serif;font-size:clamp(.8rem,1.5vw,1.1rem);letter-spacing:.12em;color:var(--hdg)">IMPOSTAZIONI</div>
-    <div class="auth-field">
-      <div class="auth-label">NOME</div>
-      <input class="auth-input" id="profName" type="text"/>
-    </div>
-    <div class="auth-field">
-      <div class="auth-label">EMAIL PER LE NOTIFICHE</div>
-      <input class="auth-input" id="profEmail" type="email"/>
-    </div>
-    <div class="auth-err" id="profErr"></div>
-    <div style="display:flex;gap:.6em">
-      <button class="auth-btn auth-btn-primary" style="flex:1" onclick="saveProfile()">SALVA</button>
-      <button class="auth-btn" style="flex:0 0 auto;background:var(--muted2);color:var(--muted);border:1px solid var(--edge)" onclick="closeProfile()">ANNULLA</button>
-    </div>
-  </div>
-</div>
+<!-- nav spostata nell'header -->
 
 <script type="module">
-import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-         createUserWithEmailAndPassword, signOut,
-         GoogleAuthProvider, signInWithPopup, updateProfile }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc,
-         setDoc, getDoc, updateDoc, serverTimestamp, query, where, getDocs, orderBy }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup,updateProfile}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getFirestore,collection,addDoc,doc,setDoc,getDoc,updateDoc,serverTimestamp,query,orderBy,getDocs}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-/* ── CONFIG ─────────────────────────────────────────── */
-const FB = {
-  apiKey:"AIzaSyBmCC24qh7kcQWe1j_UjVFG7hddiqGXRk8",
-  authDomain:"t7-datalogger.firebaseapp.com",
-  projectId:"t7-datalogger",
-  storageBucket:"t7-datalogger.firebasestorage.app",
-  messagingSenderId:"444731347089",
-  appId:"1:444731347089:web:eaac804d5f9ae44242ef30"
-};
-const EMAILJS_KEY = "1uP_ThQuMmekBnvor";
-const EMAILJS_SVC = "T7mail";
-const EMAILJS_TPL = "template_hctjwkg";
-const SPD_START   = 5;
-const IDLE_STOP   = 60;
-const LOG_IV      = 5000;
-const WEATHER_IV  = 300000;
-const DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
-const WMO_ICON = {0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",51:"🌦",53:"🌦",55:"🌧",61:"🌧",63:"🌧",65:"🌧",71:"🌨",73:"🌨",75:"❄️",80:"🌦",81:"🌧",82:"⛈",95:"⛈",96:"⛈",99:"⛈"};
-const WMO_TXT  = {0:"Sereno",1:"P.nuvoloso",2:"Nuvoloso",3:"Coperto",45:"Nebbia",51:"Pioggerella",61:"Pioggia",65:"Pioggia forte ⚠",75:"Neve forte ⚠",82:"Rovesci forti ⚠",95:"Temporale ⚠",99:"Temporale forte ⚠"};
-const SEVERE   = new Set([55,65,67,75,77,80,81,82,85,86,95,96,99]);
+const FB={apiKey:"AIzaSyBmCC24qh7kcQWe1j_UjVFG7hddiqGXRk8",authDomain:"t7-datalogger.firebaseapp.com",projectId:"t7-datalogger",storageBucket:"t7-datalogger.firebasestorage.app",messagingSenderId:"444731347089",appId:"1:444731347089:web:eaac804d5f9ae44242ef30"};
+const EMAILJS_KEY="1uP_ThQuMmekBnvor",EMAILJS_SVC="T7mail",EMAILJS_TPL="template_hctjwkg";
+const SPD_START=5,IDLE_STOP=60,LOG_IV=5000,WEATHER_IV=300000;
+const DIRS=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
+const WMO_ICON={0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",51:"🌦",53:"🌦",55:"🌧",61:"🌧",63:"🌧",65:"🌧",71:"🌨",73:"🌨",75:"❄️",80:"🌦",81:"🌧",82:"⛈",95:"⛈",96:"⛈",99:"⛈"};
+const WMO_TXT={0:"Sereno",1:"P.nuvoloso",2:"Nuvoloso",3:"Coperto",45:"Nebbia",51:"Pioggerella",61:"Pioggia",65:"Pioggia forte ⚠",75:"Neve forte ⚠",82:"Rovesci forti ⚠",95:"Temporale ⚠",99:"Temporale forte ⚠"};
+const SEVERE=new Set([55,65,67,75,77,80,81,82,85,86,95,96,99]);
 
-/* ── INIT ────────────────────────────────────────────── */
-const app  = initializeApp(FB);
-const auth = getAuth(app);
-const db   = getFirestore(app);
+const app=initializeApp(FB);
+const auth=getAuth(app);
+const db=getFirestore(app);
 emailjs.init(EMAILJS_KEY);
 
-/* ── USER STATE ──────────────────────────────────────── */
-let CU = null;      // current Firebase user
-let UP = {};        // user profile from Firestore {name, notifyEmail}
+let CU=null,UP={};
+const S={spd:0,alt:0,lat:null,lon:null,hdg:null,acc:null,compass:0,weather:null,elevPos:0,elevNeg:0,prevAlt:null,altHist:[],prevPos:null,lastMove:Date.now(),_weather:0,trip:{on:false,start:0,dist:0,elapsed:0,maxSpd:0},log:{on:false,sid:null,pts:0,buf:[],startPlace:null,endPlace:null}};
 
-/* ── GPS / APP STATE ─────────────────────────────────── */
-const S = {
-  spd:0,alt:0,lat:null,lon:null,hdg:null,acc:null,
-  compass:0,weather:null,
-  elevPos:0,elevNeg:0,prevAlt:null,altHist:[],
-  prevPos:null,lastMove:Date.now(),_weather:0,
-  trip:{on:false,start:0,dist:0,elapsed:0,maxSpd:0},
-  log:{on:false,sid:null,pts:0,buf:[],place:null},
-};
-
-/* ════════════════════════════════════════════════════
-   AUTH
-════════════════════════════════════════════════════ */
-onAuthStateChanged(auth, async user => {
-  CU = user;
+/* ── AUTH ── */
+onAuthStateChanged(auth,async user=>{
+  CU=user;
   if(user){
-    // Carica/crea profilo
-    const ref = doc(db,"users",user.uid);
-    const snap = await getDoc(ref).catch(()=>null);
-    if(snap?.exists()){
-      UP = snap.data();
-    } else {
-      // Primo accesso — crea profilo con defaults
-      UP = {
-        name: user.displayName || user.email.split("@")[0],
-        notifyEmail: user.email,
-      };
-      await setDoc(ref, UP).catch(()=>{});
-    }
+    const ref=doc(db,"users",user.uid);
+    const snap=await getDoc(ref).catch(()=>null);
+    if(snap?.exists()){UP=snap.data();UP.extraEmails=UP.extraEmails||[];}
+    else{UP={name:user.displayName||user.email.split("@")[0],notifyEmail:user.email};await setDoc(ref,UP).catch(()=>{});}
     updateUserUI();
-    document.getElementById("authScreen").classList.add("hidden");
+    $id("authScreen").classList.add("hidden");
     startGPS();
-    $id("fbBadge").textContent = "☁️ Firebase";
-    $id("fbBadge").style.color = "#39ff14";
-  } else {
-    document.getElementById("authScreen").classList.remove("hidden");
-  }
+    $id("fbBadge").textContent="☁️ Firebase";$id("fbBadge").style.color="#39ff14";
+    setTimeout(recoverPendingSessions,2000);
+  }else{$id("authScreen").classList.remove("hidden");}
 });
-
 function updateUserUI(){
-  const name  = UP.name || CU?.displayName || "Utente";
-  const email = UP.notifyEmail || CU?.email || "—";
-  // avatar: prima lettera del nome
-  const av = $id("userAvatar");
-  if(CU?.photoURL){
-    av.innerHTML = `<img src="${CU.photoURL}" alt="avatar"/>`;
-  } else {
-    av.textContent = name[0].toUpperCase();
-  }
-  $id("userName").textContent  = name;
-  $id("menuName").textContent  = name;
-  $id("menuEmail").textContent = email;
-  $id("lvEmail").textContent   = email;
+  const name=UP.name||CU?.displayName||"Utente",email=UP.notifyEmail||CU?.email||"—";
+  const av=$id("uAv");
+  if(CU?.photoURL)av.innerHTML=`<img src="${CU.photoURL}" alt="av"/>`;
+  else av.textContent=name[0].toUpperCase();
+  $id("uName").textContent=name;$id("umName").textContent=name;
+  $id("umEmail").textContent=email;$id("lvEmail").textContent=email;
 }
-
-/* mode: 'login' | 'register' */
-let _mode = "login";
-window.authMode = function(m){
-  _mode = m;
-  $id("tabLogin").classList.toggle("on",   m==="login");
+let _mode="login";
+window.authMode=function(m){
+  _mode=m;
+  $id("tabLogin").classList.toggle("on",m==="login");
   $id("tabRegister").classList.toggle("on",m==="register");
-  $id("fieldName").style.display   = m==="register"?"flex":"none";
-  $id("fieldPass2").style.display  = m==="register"?"flex":"none";
-  $id("authMainBtn").textContent   = m==="login"?"ACCEDI":"REGISTRATI";
+  $id("fieldName").style.display=m==="register"?"flex":"none";
+  $id("fieldPass2").style.display=m==="register"?"flex":"none";
+  $id("authMainBtn").textContent=m==="login"?"ACCEDI":"REGISTRATI";
+  $id("authMainBtn").disabled=false;
   $id("authErr").classList.remove("on");
+  $id("authErr").style.display="none";
 };
-
-window.doEmailAuth = async function(){
-  const email = $id("inEmail").value.trim();
-  const pass  = $id("inPass").value;
-  const err   = $id("authErr");
-  err.classList.remove("on");
-
-  if(!email||!pass){err.textContent="Compila email e password.";err.classList.add("on");return;}
-
+window.doEmailAuth=async function(){
+  const email=$id("inEmail").value.trim(),pass=$id("inPass").value,err=$id("authErr");
+  err.classList.remove("on");err.style.display="none";
+  if(!email||!pass){
+    err.textContent="Compila email e password.";
+    err.classList.add("on");err.style.display="block";return;
+  }
+  $id("authMainBtn").textContent="...";$id("authMainBtn").disabled=true;
   if(_mode==="register"){
-    const name  = $id("inName").value.trim()||email.split("@")[0];
-    const pass2 = $id("inPass2").value;
-    if(pass!==pass2){err.textContent="Le password non coincidono.";err.classList.add("on");return;}
-    if(pass.length<6){err.textContent="Password troppo corta (min 6 caratteri).";err.classList.add("on");return;}
-    try{
-      const cred = await createUserWithEmailAndPassword(auth,email,pass);
-      await updateProfile(cred.user,{displayName:name});
-      // onAuthStateChanged gestirà il resto
-    }catch(e){
-      err.textContent = authErrMsg(e.code);
-      err.classList.add("on");
+    const name=$id("inName").value.trim()||email.split("@")[0];
+    const pass2=$id("inPass2").value;
+    if(pass!==pass2){
+      err.textContent="Le password non coincidono.";
+      err.classList.add("on");err.style.display="block";
+      $id("authMainBtn").textContent="REGISTRATI";$id("authMainBtn").disabled=false;return;
     }
-  } else {
+    if(pass.length<6){
+      err.textContent="Password minimo 6 caratteri.";
+      err.classList.add("on");err.style.display="block";
+      $id("authMainBtn").textContent="REGISTRATI";$id("authMainBtn").disabled=false;return;
+    }
+    try{
+      const cred=await createUserWithEmailAndPassword(auth,email,pass);
+      await updateProfile(cred.user,{displayName:name});
+      // onAuthStateChanged gestisce il resto
+    }catch(e){
+      console.error("Register error:",e);
+      err.textContent=authMsg(e.code);
+      err.classList.add("on");err.style.display="block";
+      $id("authMainBtn").textContent="REGISTRATI";$id("authMainBtn").disabled=false;
+    }
+  }else{
     try{
       await signInWithEmailAndPassword(auth,email,pass);
     }catch(e){
-      err.textContent = authErrMsg(e.code);
-      err.classList.add("on");
+      console.error("Login error:",e);
+      err.textContent=authMsg(e.code);
+      err.classList.add("on");err.style.display="block";
+      $id("authMainBtn").textContent="ACCEDI";$id("authMainBtn").disabled=false;
     }
   }
 };
-
-window.doGoogleAuth = async function(){
-  const err = $id("authErr");
-  err.classList.remove("on");
+window.doGoogleAuth=async function(){
+  const err=$id("authErr");err.classList.remove("on");err.style.display="none";
   try{
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth,provider);
+    await signInWithPopup(auth,new GoogleAuthProvider());
   }catch(e){
+    console.error("Google auth error:",e);
     if(e.code!=="auth/popup-closed-by-user"){
-      err.textContent = authErrMsg(e.code);
-      err.classList.add("on");
+      err.textContent=authMsg(e.code);
+      err.classList.add("on");err.style.display="block";
     }
   }
 };
-
-window.doSignOut = async function(){
-  closeUserMenu();
-  if(S.log.on) await stopLog("logout");
-  await signOut(auth);
+window.doSignOut=async function(){
+  closeUserMenu();if(S.log.on)await stopLog("logout");await signOut(auth);
 };
+function authMsg(c){return({
+  "auth/email-already-in-use":"Email già registrata. Usa 'Accedi' o un'altra email.",
+  "auth/invalid-email":"Formato email non valido.",
+  "auth/weak-password":"Password troppo debole (minimo 6 caratteri).",
+  "auth/user-not-found":"Account non trovato. Registrati prima.",
+  "auth/wrong-password":"Password errata.",
+  "auth/invalid-credential":"Email o password errati.",
+  "auth/too-many-requests":"Troppi tentativi. Aspetta qualche minuto.",
+  "auth/network-request-failed":"Errore di rete. Controlla la connessione.",
+  "auth/popup-blocked":"Popup bloccato dal browser. Prova email/password.",
+  "auth/operation-not-allowed":"Metodo di login non abilitato in Firebase Console.",
+  "auth/internal-error":"Errore interno Firebase.",
+})[c]||("Errore ("+c+"). Controlla la connessione.");}
 
-function authErrMsg(code){
-  const map = {
-    "auth/email-already-in-use": "Email già registrata.",
-    "auth/invalid-email":        "Email non valida.",
-    "auth/weak-password":        "Password troppo debole.",
-    "auth/user-not-found":       "Account non trovato.",
-    "auth/wrong-password":       "Password errata.",
-    "auth/invalid-credential":   "Credenziali non valide.",
-    "auth/too-many-requests":    "Troppi tentativi, riprova tra poco.",
-    "auth/network-request-failed":"Errore di rete.",
-  };
-  return map[code] || ("Errore: "+code);
+/* ── PROFILO ── */
+window.openProfModal=function(){
+  closeUserMenu();
+  $id("profName").value=UP.name||"";
+  $id("profEmail").value=UP.notifyEmail||CU?.email||"";
+  $id("profErr").textContent="";
+  // Popola email extra
+  const list=$id("extraEmailList");
+  list.innerHTML="";
+  (UP.extraEmails||[]).forEach(em=>addExtraEmailRow(em));
+  $id("profModal").classList.add("on");
+};
+window.addExtraEmail=function(){ addExtraEmailRow(""); };
+function addExtraEmailRow(val){
+  const list=$id("extraEmailList");
+  const row=document.createElement("div");
+  row.style.cssText="display:flex;gap:6px;align-items:center;";
+  const inp=document.createElement("input");
+  inp.className="auth-input"; inp.type="email";
+  inp.placeholder="altra@email.com"; inp.value=val||"";
+  inp.style.flex="1";
+  const del=document.createElement("button");
+  del.textContent="✕";
+  del.style.cssText="background:var(--muted2);border:1px solid var(--edge);color:var(--spd);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;flex-shrink:0;";
+  del.onclick=()=>row.remove();
+  row.appendChild(inp); row.appendChild(del);
+  list.appendChild(row);
+  inp.focus();
 }
-
-/* ════════════════════════════════════════════════════
-   PROFILO
-════════════════════════════════════════════════════ */
-window.openProfile = function(){
-  closeUserMenu();
-  $id("profName").value  = UP.name  || "";
-  $id("profEmail").value = UP.notifyEmail || CU?.email || "";
-  $id("profErr").textContent = "";
-  const m = $id("profileModal");
-  m.style.display = "flex";
-};
-window.closeProfile = function(){
-  $id("profileModal").style.display="none";
-};
-window.saveProfile = async function(){
-  const name  = $id("profName").value.trim();
-  const email = $id("profEmail").value.trim();
-  const err   = $id("profErr");
-  if(!name||!email){err.textContent="Compila tutti i campi.";err.style.display="block";return;}
-  if(!/\S+@\S+\.\S+/.test(email)){err.textContent="Email non valida.";err.style.display="block";return;}
+window.closeProfModal=function(){$id("profModal").classList.remove("on");};
+window.saveProfile=async function(){
+  const name=$id("profName").value.trim(),email=$id("profEmail").value.trim(),err=$id("profErr");
+  if(!name||!email){err.textContent="Compila nome ed email principale.";err.style.display="block";return;}
+  // Raccogli email extra valide
+  const extraEmails=[...($id("extraEmailList")?.querySelectorAll("input")||[])]
+    .map(i=>i.value.trim().toLowerCase())
+    .filter(e=>e&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)&&e!==email.toLowerCase());
+  // Deduplicazione
+  const unique=[...new Set(extraEmails)];
   try{
-    UP.name = name; UP.notifyEmail = email;
-    await setDoc(doc(db,"users",CU.uid), UP, {merge:true});
+    UP.name=name; UP.notifyEmail=email; UP.extraEmails=unique;
+    await setDoc(doc(db,"users",CU.uid),UP,{merge:true});
     await updateProfile(CU,{displayName:name});
-    updateUserUI();
-    closeProfile();
+    updateUserUI(); closeProfModal();
   }catch(e){
-    err.textContent="Errore salvataggio.";err.style.display="block";
+    err.textContent="Errore salvataggio: "+e.message;
+    err.style.display="block";
   }
 };
 
-/* ════════════════════════════════════════════════════
-   USER MENU
-════════════════════════════════════════════════════ */
-window.toggleUserMenu = ()=> $id("userMenu").classList.toggle("on");
-function closeUserMenu(){ $id("userMenu").classList.remove("on"); }
-document.addEventListener("click", e=>{
-  if(!e.target.closest("#userBtn")&&!e.target.closest("#userMenu")) closeUserMenu();
+/* ── USER MENU ── */
+window.toggleUserMenu=()=>$id("userMenu").classList.toggle("on");
+function closeUserMenu(){$id("userMenu").classList.remove("on");}
+document.addEventListener("click",e=>{if(!e.target.closest("#userBtn")&&!e.target.closest("#userMenu"))closeUserMenu();});
+
+/* ── TEMA ── */
+const THEMES=[{f:0,t:6,cls:"t-notte",lbl:"🌙"},{f:6,t:8,cls:"t-alba",lbl:"🌅"},{f:8,t:18,cls:"t-giorno",lbl:"☀️"},{f:18,t:20,cls:"t-tramonto",lbl:"🌆"},{f:20,t:24,cls:"t-sera",lbl:"🌃"}];
+function applyTheme(){const h=new Date().getHours();const th=THEMES.find(x=>h>=x.f&&h<x.t)||THEMES[0];document.body.className=th.cls;$id("themeLbl").textContent=th.lbl;}
+applyTheme();setInterval(applyTheme,60000);
+
+/* ── SWIPE DASHBOARD ── */
+let curPage=0;
+const swiper=$id("swiper");
+let tx0=0,swiping=false;
+
+// Touch
+swiper.addEventListener("touchstart",e=>{tx0=e.touches[0].clientX;swiping=true;},{passive:true});
+swiper.addEventListener("touchend",e=>{
+  if(!swiping)return;swiping=false;
+  const dx=e.changedTouches[0].clientX-tx0;
+  if(dx<-30&&curPage===0)setPage(1);
+  else if(dx>30&&curPage===1)setPage(0);
+},{passive:true});
+
+// Mouse (desktop)
+swiper.addEventListener("mousedown",e=>{tx0=e.clientX;swiping=true;e.preventDefault();});
+window.addEventListener("mouseup",e=>{
+  if(!swiping)return;swiping=false;
+  const dx=e.clientX-tx0;
+  if(dx<-30&&curPage===0)setPage(1);
+  else if(dx>30&&curPage===1)setPage(0);
 });
+// Cambia cursore mentre trascini
+swiper.style.cursor="grab";
+swiper.addEventListener("mousedown",()=>swiper.style.cursor="grabbing");
+window.addEventListener("mouseup",()=>swiper.style.cursor="grab");
 
-/* ════════════════════════════════════════════════════
-   TEMA ORARIO
-════════════════════════════════════════════════════ */
-const THEMES=[
-  {f:0,t:6,cls:"t-notte",lbl:"🌙 NOTTE"},
-  {f:6,t:8,cls:"t-alba",lbl:"🌅 ALBA"},
-  {f:8,t:18,cls:"t-giorno",lbl:"☀️ GIORNO"},
-  {f:18,t:20,cls:"t-tramonto",lbl:"🌆 TRAMONTO"},
-  {f:20,t:24,cls:"t-sera",lbl:"🌃 SERA"},
-];
-function applyTheme(){
-  const h=new Date().getHours();
-  const th=THEMES.find(x=>h>=x.f&&h<x.t)||THEMES[0];
-  document.body.className=th.cls;
-  $id("themeLbl").textContent=th.lbl;
+// Frecce tastiera (comodo su desktop)
+window.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"&&curPage===0)setPage(1);
+  else if(e.key==="ArrowLeft"&&curPage===1)setPage(0);
+});
+function setPage(p){
+  curPage=p;
+  swiper.style.transform=`translateX(${p===-1?0:p*-50}%)`;
+  $id("pd0").classList.toggle("on",p===0);
+  $id("pd1").classList.toggle("on",p===1);
 }
-applyTheme(); setInterval(applyTheme,60000);
 
-/* ════════════════════════════════════════════════════
-   UTILS
-════════════════════════════════════════════════════ */
-const d2dir = d => DIRS[Math.round(d/22.5)%16];
-function hav(a,b,c,d){
-  const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180;
-  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-function fmtT(ms){
-  if(!ms)return"00:00:00";
-  const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
-  return[h,m,sc].map(v=>String(v).padStart(2,"0")).join(":");
-}
+/* ── UTILS ── */
+const d2dir=d=>DIRS[Math.round(d/22.5)%16];
+function hav(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180;const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function fmtT(ms){if(!ms)return"00:00:00";const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return[h,m,sc].map(v=>String(v).padStart(2,"0")).join(":");}
 function fmtD(m){return m>=1000?(m/1000).toFixed(2)+" km":Math.round(m)+" m";}
 function $id(id){return document.getElementById(id);}
 
-/* ════════════════════════════════════════════════════
-   ALTIMETRO
-════════════════════════════════════════════════════ */
-function buildTape(){
-  const tape=$id("altTape");if(!tape)return;
-  const PX=3,MIN=-100,MAX=4500,totalH=(MAX-MIN)*PX;
-  tape.style.height=totalH+"px";
-  let h="";
-  for(let a=MIN;a<=MAX;a+=10){
-    const maj=a%50===0,top=totalH-(a-MIN)*PX-8;
-    h+=`<div class="alt-tick" style="top:${top}px"><div class="alt-tick-line${maj?" maj":""}" style="width:${maj?14:8}px"></div>${maj?`<span class="alt-tick-num">${a}</span>`:""}</div>`;
-  }
-  tape.innerHTML=h;
-}
-function moveTape(alt){
-  const wrap=$id("altTape")?.parentElement,tape=$id("altTape");
-  if(!wrap||!tape)return;
-  const PX=3,MIN=-100,wH=wrap.clientHeight||80;
-  const tH=tape.clientHeight||parseInt(tape.style.height)||13800;
-  tape.style.transform=`translateY(${-(tH-(alt-MIN)*PX-wH/2)}px)`;
-}
-buildTape();
-
-/* ════════════════════════════════════════════════════
-   GPS
-════════════════════════════════════════════════════ */
+/* ── GPS ── */
 function startGPS(){
-  if(!navigator.geolocation){$id("gpsDot").className="gps-dot err";return;}
-  navigator.geolocation.watchPosition(onPos,onErr,
-    {enableHighAccuracy:true,maximumAge:1500,timeout:20000});
+  if(!navigator.geolocation){showGpsHelp("unsupported");return;}
+  navigator.geolocation.getCurrentPosition(pos=>{onPos(pos);startGPSWatch();},handleGpsErr,{enableHighAccuracy:true,timeout:8000,maximumAge:0});
 }
+function startGPSWatch(){navigator.geolocation.watchPosition(onPos,handleGpsErr,{enableHighAccuracy:true,maximumAge:1500,timeout:20000});}
+function handleGpsErr(err){
+  $id("gpsDot").className="gps-dot err";
+  if(err.code===1)showGpsHelp("denied");
+  else if(err.code===2)showGpsHelp("unavailable");
+  else setTimeout(()=>navigator.geolocation.getCurrentPosition(onPos,e=>{if(e.code===1)showGpsHelp("denied");},{enableHighAccuracy:true,timeout:15000,maximumAge:0}),3000);
+}
+function showGpsHelp(reason){
+  const title=$id("gpsModalTitle"),body=$id("gpsModalBody");
+  if(reason==="denied"){
+    title.textContent="📍 Permesso GPS negato";
+    body.innerHTML=`<p>Il navigatore EKIY blocca il dialog Chrome. Abilita manualmente:</p><ol><li>Tieni premuto l'icona di <strong>Chrome</strong></li><li>Tocca <strong>Info app → Permessi</strong></li><li>Tocca <strong>Posizione → Consenti sempre</strong></li><li>Torna qui e tocca <strong>RIPROVA</strong></li></ol>`;
+  }else if(reason==="unavailable"){title.textContent="📡 Segnale GPS assente";body.innerHTML=`<p>Portati all'aperto e riprova.</p>`;}
+  else{title.textContent="❌ GPS non supportato";body.innerHTML=`<p>Usa Chrome aggiornato.</p>`;}
+  $id("gpsModal").classList.add("on");
+}
+window.retryGPS=function(){$id("gpsModal").classList.remove("on");$id("gpsDot").className="gps-dot wait";startGPS();};
+window.openChromeSettings=function(){
+  try{window.location.href="intent://settings#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;data=package:com.android.chrome;scheme=android-app;end";}catch{}
+};
 function onPos(pos){
+  $id("gpsModal").classList.remove("on");
   const{latitude:la,longitude:lo,altitude:al,speed:sp,heading:hd,accuracy:ac}=pos.coords;
-  S.spd=sp!=null?sp*3.6:0;
-  S.alt=al??S.alt;S.lat=la;S.lon=lo;S.hdg=hd;S.acc=ac;
+  S.spd=sp!=null?sp*3.6:0;S.alt=al??S.alt;S.lat=la;S.lon=lo;S.hdg=hd;S.acc=ac;
   if(S.spd>1)S.lastMove=Date.now();
-  if(S.prevAlt!==null&&al!=null){
-    const d=(al??0)-S.prevAlt;
-    if(d>0.5)S.elevPos+=d;else if(d<-0.5)S.elevNeg+=Math.abs(d);
-  }
+  if(S.prevAlt!==null&&al!=null){const d=(al??0)-S.prevAlt;if(d>0.5)S.elevPos+=d;else if(d<-0.5)S.elevNeg+=Math.abs(d);}
   if(al!=null)S.prevAlt=al;
   S.altHist.push(S.alt);if(S.altHist.length>10)S.altHist.shift();
-  if(S.trip.on){
-    if(S.prevPos)S.trip.dist+=hav(S.prevPos.lat,S.prevPos.lon,la,lo);
-    S.prevPos={lat:la,lon:lo};S.trip.maxSpd=Math.max(S.trip.maxSpd,S.spd);
-  }
+  if(S.trip.on){if(S.prevPos)S.trip.dist+=hav(S.prevPos.lat,S.prevPos.lon,la,lo);S.prevPos={lat:la,lon:lo};S.trip.maxSpd=Math.max(S.trip.maxSpd,S.spd);}
   if(Date.now()-S._weather>WEATHER_IV){
     S._weather=Date.now();
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,weathercode,windspeed_10m&wind_speed_unit=kmh`)
-      .then(r=>r.json()).then(d=>{
-        const c=d.current;
-        S.weather={temp:Math.round(c.temperature_2m),wind:Math.round(c.windspeed_10m),code:c.weathercode};
-        renderWeather();
-        if(SEVERE.has(c.weathercode))showWeatherAlert(c.weathercode);
-      }).catch(()=>{});
+      .then(r=>r.json()).then(d=>{const c=d.current;S.weather={temp:Math.round(c.temperature_2m),wind:Math.round(c.windspeed_10m),code:c.weathercode};renderWeather();if(SEVERE.has(c.weathercode))showWeatherAlert(c.weathercode);}).catch(()=>{});
   }
   $id("gpsDot").className="gps-dot ok";
-  if(CU)checkAuto();
-  render();
+  if(CU)checkAuto();render();
 }
-function onErr(){$id("gpsDot").className="gps-dot err";}
 
-/* ════════════════════════════════════════════════════
-   BUSSOLA
-════════════════════════════════════════════════════ */
+/* ── BUSSOLA HSI CANVAS ── */
+function drawHSI(heading){
+  const canvas = document.getElementById('hsiCanvas');
+  if(!canvas) return;
+  const wrap = canvas.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const cssSize = wrap.offsetWidth || 200;
+  if(cssSize < 10) return;
+  const px = Math.round(cssSize * dpr); // pixel fisici reali
+  if(canvas.width !== px){ canvas.width = px; canvas.height = px; }
+  canvas.style.width = cssSize+'px'; canvas.style.height = cssSize+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1,0,0,1,0,0); // reset prima di scalare
+  ctx.scale(dpr, dpr); // scala tutto per alta risoluzione
+  const cx = cssSize/2, cy = cssSize/2;
+  const r  = cssSize/2 - 3;
+  const st = getComputedStyle(document.documentElement);
+  const cEdge  = st.getPropertyValue('--edge').trim()  || '#1a1a1a';
+  const cMuted = st.getPropertyValue('--muted').trim() || '#3a3a3a';
+  const cHdg   = st.getPropertyValue('--hdg').trim()   || '#00cfff';
+  const cSpd   = st.getPropertyValue('--spd').trim()   || '#ff4500';
+  const cWarm  = st.getPropertyValue('--warm').trim()  || '#ffc837';
+  const cTxt   = st.getPropertyValue('--txt').trim()   || '#e0e0e0';
+  const cPanel = st.getPropertyValue('--panel').trim() || '#0d0d0d';
+
+  ctx.clearRect(0,0,cssSize,cssSize);
+
+  // clip circolare
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.clip();
+
+  // sfondo con gradiente radiale
+  const bg = ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+  bg.addColorStop(0, cPanel);
+  bg.addColorStop(1, '#000');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,cssSize,cssSize);
+
+  // cerchi concentrici di riferimento
+  for(const fr of [0.33,0.66]){
+    ctx.beginPath(); ctx.arc(cx,cy,r*fr,0,2*Math.PI);
+    ctx.strokeStyle=cEdge; ctx.lineWidth=0.6; ctx.stroke();
+  }
+
+  // ── ROSA: ruota con heading ──
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-heading*Math.PI/180);
+
+  // tacche ogni 5° (minor), 10° (major), 30° (etichetta), 90° (cardinale)
+  for(let deg=0;deg<360;deg+=5){
+    const rad = deg*Math.PI/180;
+    const isCard = deg%90===0, is30 = deg%30===0, isMaj = deg%10===0;
+    const inner = isCard ? r*0.72 : is30 ? r*0.75 : isMaj ? r*0.80 : r*0.86;
+    const x1=Math.sin(rad)*inner,   y1=-Math.cos(rad)*inner;
+    const x2=Math.sin(rad)*(r-1),   y2=-Math.cos(rad)*(r-1);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    ctx.strokeStyle = isCard ? cTxt : is30 ? '#606060' : isMaj ? cEdge : cEdge;
+    ctx.lineWidth   = isCard ? 2.5  : is30 ? 1.5      : isMaj ? 1.0   : 0.6;
+    ctx.stroke();
+  }
+
+  // etichette ogni 30°
+  const cardLabels={0:'N',3:'E',9:'E',18:'S',27:'O'};
+  const lblMap={0:'N',3:'030',6:'060',9:'E',12:'120',15:'150',18:'S',21:'210',24:'240',27:'O',30:'300',33:'330'};
+  for(let i=0;i<36;i+=3){
+    const rad = i*10*Math.PI/180;
+    const lr  = r*0.64;
+    const lx  = Math.sin(rad)*lr, ly=-Math.cos(rad)*lr;
+    ctx.save(); ctx.translate(lx,ly); ctx.rotate(rad);
+    const isC = (i%9===0);
+    const lbl = isC ? ['N','E','S','O'][i/9] : String(i*10).padStart(3,'0');
+    ctx.font = isC
+      ? `900 ${Math.round(r*0.14)}px Orbitron,sans-serif`
+      : `700 ${Math.round(r*0.09)}px Orbitron,sans-serif`;
+    ctx.fillStyle = i===0 ? cSpd : isC ? cTxt : '#666';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    // ombra testo
+    if(isC){ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=4;}
+    ctx.fillText(lbl,0,0);
+    ctx.shadowBlur=0;
+    ctx.restore();
+  }
+
+  // linee cardinali sottili attraverso centro
+  for(let deg=0;deg<360;deg+=90){
+    const rad=deg*Math.PI/180;
+    ctx.beginPath();
+    ctx.moveTo(Math.sin(rad)*r*0.12, -Math.cos(rad)*r*0.12);
+    ctx.lineTo(Math.sin(rad)*r*0.68, -Math.cos(rad)*r*0.68);
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  ctx.restore(); // fine rosa rotante
+  ctx.restore(); // fine clip
+
+  // ── FRECCIA DI PRUA: fissa, sempre in cima ──
+  ctx.save();
+  // triangolo principale
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r*0.58);
+  ctx.lineTo(cx - r*0.07, cy - r*0.30);
+  ctx.lineTo(cx + r*0.07, cy - r*0.30);
+  ctx.closePath();
+  ctx.fillStyle = cHdg;
+  ctx.shadowColor = cHdg; ctx.shadowBlur = 14; ctx.fill();
+  // triangolo inferiore (coda)
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r*0.24);
+  ctx.lineTo(cx - r*0.04, cy - r*0.30);
+  ctx.lineTo(cx + r*0.04, cy - r*0.30);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.shadowBlur=0; ctx.fill();
+  // linea di mira verticale
+  ctx.beginPath();
+  ctx.moveTo(cx, cy+r*0.12); ctx.lineTo(cx, cy-r*0.24);
+  ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
+
+  // ── BORDO ESTERNO ──
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI);
+  ctx.strokeStyle = cHdg+'44'; ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,r-2,0,2*Math.PI);
+  ctx.strokeStyle = cEdge; ctx.lineWidth=1; ctx.stroke();
+
+  // ── PUNTO CENTRALE ──
+  ctx.beginPath(); ctx.arc(cx,cy,r*0.045,0,2*Math.PI);
+  const cg = ctx.createRadialGradient(cx,cy,0,cx,cy,r*0.045);
+  cg.addColorStop(0,cWarm); cg.addColorStop(1,cSpd);
+  ctx.fillStyle=cg; ctx.shadowColor=cWarm; ctx.shadowBlur=8; ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+/* ── ALTIMETRO NASTRO ── */
+/* tape altimeter removed */
+
+// Ridisegna bussola al resize
+if(window.ResizeObserver){
+  const ro = new ResizeObserver(()=>{ drawHSI(S.hdg??S.compass); });
+  const wrap = document.getElementById('hsiCanvas')?.parentElement;
+  if(wrap) ro.observe(wrap);
+}
+// Primo disegno dopo che il DOM è renderizzato
+requestAnimationFrame(()=>requestAnimationFrame(()=>drawHSI(S.hdg??S.compass)));
+
+/* ── BUSSOLA ── */
 window.addEventListener("deviceorientationabsolute",e=>{if(e.absolute&&e.alpha!=null)S.compass=Math.round(360-e.alpha);},true);
 window.addEventListener("deviceorientation",e=>{const v=e.webkitCompassHeading??(e.absolute?Math.round(360-e.alpha):null);if(v!=null)S.compass=Math.round(v);},true);
 
-/* ════════════════════════════════════════════════════
-   RENDER
-════════════════════════════════════════════════════ */
+/* ── AUTO LOG ── */
+function checkAuto(){if(!S.log.on&&S.spd>SPD_START)startLog();}
+// ── SHUTDOWN LISTENERS ──
+// pagehide è più affidabile di beforeunload su mobile/Android
+window.addEventListener("pagehide",e=>{
+  if(S.log.on) stopLog("shutdown",true);
+});
+window.addEventListener("beforeunload",e=>{
+  if(S.log.on) stopLog("shutdown",true);
+});
+// visibilitychange: schermo spento o app in background
+window.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden"&&S.log.on){
+    stopLog("shutdown",true);
+  }
+});
+// (nessuna batteria: listener rimosso)
+let _checkpointTs=0;
+setInterval(()=>{
+  if(S.trip.on)S.trip.elapsed=Date.now()-S.trip.start;
+  const idle=Math.floor((Date.now()-S.lastMove)/1000);
+  if(S.log.on&&idle>=IDLE_STOP){ stopLog("fermo >60s"); return; }
+  // ── CHECKPOINT ogni 30s: aggiorna localStorage con stato corrente ──
+  if(S.log.on&&CU&&Date.now()-_checkpointTs>30000){
+    _checkpointTs=Date.now();
+    const snap={
+      id:S.log.sid,
+      fileName:"",
+      startPlace:S.log.startPlace||"Luogo",
+      endPlace:"…",
+      place:S.log.startPlace||"Luogo",
+      uid:CU.uid,
+      endedAt:new Date().toISOString(),
+      pts:S.log.pts,
+      dist:Math.round(S.trip.dist),
+      elapsed:S.trip.elapsed,
+      maxSpd:Math.round(S.trip.maxSpd),
+      eP:Math.round(S.elevPos),
+      eN:Math.round(S.elevNeg),
+      notes:document.getElementById("notesIn")?.value||"",
+      reason:"checkpoint",
+      buf:[...S.log.buf], // copia buffer attuale
+      lat:S.lat, lon:S.lon,
+      _pending:true,
+      _checkpoint:true
+    };
+    snap.fileName=buildName(snap.startPlace,"…",snap.dist);
+    // Sostituisce o aggiunge checkpoint in localStorage
+    const arr=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]");
+    const i=arr.findIndex(x=>x.id===snap.id);
+    if(i>=0) arr[i]=snap; else arr.push(snap);
+    localStorage.setItem("t7v2_"+CU.uid,JSON.stringify(arr));
+  }
+  render();
+},1000);
+
+/* ── RENDER ── */
 function render(){
   const spd=Math.round(S.spd),alt=Math.round(S.alt),hdg=S.hdg??S.compass;
-  const idle=Math.floor((Date.now()-S.lastMove)/1000);
   $id("spdNum").textContent=spd;
-  if(S.trip.maxSpd>0)$id("spdMax").textContent="MAX "+Math.round(S.trip.maxSpd)+" km/h";
-  $id("needleGrp").style.transform=`rotate(${hdg}deg)`;
+  $id("spdMax").textContent=S.trip.maxSpd>0?"MAX "+Math.round(S.trip.maxSpd)+" km/h":"";
   $id("cmpDeg").textContent=hdg+"°";
   $id("cmpDir").textContent=d2dir(hdg);
-  moveTape(S.alt);
-  $id("altNum").textContent=alt;
-  const at=S.altHist;
-  $id("altTrend").textContent=at.length>=3?(at[at.length-1]-at[at.length-3]>3?"↑":at[at.length-1]-at[at.length-3]<-3?"↓":"→"):"";
+  drawHSI(hdg);
+  $id("altNum").textContent=Math.round(S.alt);
   $id("mTime").textContent=fmtT(S.trip.elapsed);
   $id("mDist").textContent=fmtD(S.trip.dist);
-  $id("elevPos").textContent="+"+Math.round(S.elevPos)+" m";
-  $id("elevNeg").textContent="-"+Math.round(S.elevNeg)+" m";
-  $id("mMaxSpd").textContent=Math.round(S.trip.maxSpd)+" km/h";
+  if($id("mDistB"))$id("mDistB").textContent=fmtD(S.trip.dist);
+  $id("elevPos").textContent="+"+Math.round(S.elevPos)+"m";
+  $id("elevNeg").textContent="-"+Math.round(S.elevNeg)+"m";
   // GPS bars
   const acc=S.acc;let bars=0,gc="var(--muted)";
   if(acc!==null){if(acc<10){bars=5;gc="var(--gps5)"}else if(acc<20){bars=4;gc="var(--gps4)"}else if(acc<40){bars=3;gc="var(--gps3)"}else if(acc<80){bars=2;gc="var(--gps2)"}else{bars=1;gc="var(--gps1)"}}
   document.documentElement.style.setProperty("--gps-c",gc);
   for(let i=1;i<=5;i++)$id("gb"+i)?.classList.toggle("on",i<=bars);
-  $id("gpsQlbl").textContent=acc===null?"—":acc<10?"OTTIMO":acc<20?"BUONO":acc<40?"MEDIO":acc<80?"SCARSO":"PESSIMO";
-  $id("gpsQlbl").style.color=gc;
-  const idlePct=S.log.on?Math.min(100,(idle/IDLE_STOP)*100):0;
-  $id("idleVal").textContent=S.log.on?idle+"s":"—";
-  $id("idleBar").style.width=idlePct+"%";
-  $id("idleBar").style.background=`hsl(${Math.round(120-idlePct*1.2)},90%,50%)`;
+  $id("gpsQ").textContent=acc===null?"—":acc<10?"OTTIMO":acc<20?"BUONO":acc<40?"MEDIO":acc<80?"SCARSO":"PESSIMO";
+  $id("gpsQ").style.color=gc;
+  if($id("gpsAcc"))$id("gpsAcc").textContent=acc!==null?"±"+Math.round(acc)+"m":"";
   $id("recBadge").classList.toggle("on",S.log.on);
+  $id("stopBtn")?.classList.toggle("on",S.log.on);
   // logger
-  $id("lvSpd").textContent=spd+" km/h";
-  $id("lvAlt").textContent=alt+" m";
-  $id("lvHdg").textContent=hdg+"°";
-  $id("lvTemp").textContent=S.weather?S.weather.temp+"°C":"—";
-  $id("lvEP").textContent="+"+Math.round(S.elevPos)+" m";
-  $id("lvEN").textContent="-"+Math.round(S.elevNeg)+" m";
-  $id("lvLat").textContent=S.lat?.toFixed(5)??"—";
-  $id("lvLon").textContent=S.lon?.toFixed(5)??"—";
+  $id("lvSpd").textContent=spd+" km/h";$id("lvAlt").textContent=alt+" m";
+  $id("lvHdg").textContent=hdg+"°";$id("lvTemp").textContent=S.weather?S.weather.temp+"°C":"—";
+  $id("lvEP").textContent="+"+Math.round(S.elevPos)+" m";$id("lvEN").textContent="-"+Math.round(S.elevNeg)+" m";
+  $id("lvLat").textContent=S.lat?.toFixed(5)??"—";$id("lvLon").textContent=S.lon?.toFixed(5)??"—";
   $id("lPts").textContent=S.log.pts;
-  $id("lStatus").textContent=S.log.on?"● REC":"⏸";
-  $id("lStatus").style.color=S.log.on?"var(--spd)":"var(--muted)";
-  $id("lvEmail").textContent=UP.notifyEmail||"—";
+  $id("lStatus").textContent=S.log.on?"● REC":"⏸";$id("lStatus").style.color=S.log.on?"var(--spd)":"var(--muted)";
 }
 function renderWeather(){
   const w=S.weather;if(!w)return;
-  const icon=WMO_ICON[w.code]??"🌡",txt=WMO_TXT[w.code]||"—";
-  $id("weatherCell").innerHTML=`<div class="info-label">METEO</div><div style="display:flex;align-items:center;gap:.4em"><span class="w-icon">${icon}</span><div><div class="w-temp">${w.temp}°C</div><div class="w-wind">💨${w.wind}km/h</div></div></div><div style="font-size:clamp(.48rem,.78vw,.68rem);color:var(--muted);font-style:italic">${txt}</div>`;
+  $id("metIcon").textContent=WMO_ICON[w.code]??"🌡";
+  $id("metTemp").textContent=w.temp+"°C";
+  $id("metWind").textContent=w.wind+" km/h vento";
+  if($id("metDesc"))$id("metDesc").textContent=WMO_TXT[w.code]||"";
 }
 function showWeatherAlert(code){
   $id("wAlertTxt").textContent=(WMO_ICON[code]||"⚠️")+" "+(WMO_TXT[code]||"Meteo avverso")+" — Prudenza!";
   $id("wAlert").classList.add("on");
 }
 
-/* ════════════════════════════════════════════════════
-   AUTO LOG
-════════════════════════════════════════════════════ */
-function checkAuto(){if(!S.log.on&&S.spd>SPD_START)startLog();}
-window.addEventListener("beforeunload",()=>{if(S.log.on)stopLog("chiusura");});
-window.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&S.log.on)stopLog("chiusura");});
-setInterval(()=>{
-  if(S.trip.on)S.trip.elapsed=Date.now()-S.trip.start;
-  const idle=Math.floor((Date.now()-S.lastMove)/1000);
-  if(S.log.on&&idle>=IDLE_STOP)stopLog("fermo >60s");
-  render();
-},1000);
-
-/* ════════════════════════════════════════════════════
-   LOG START / STOP
-════════════════════════════════════════════════════ */
+/* ── LOG START/STOP ── */
 let logIv=null;
 async function startLog(){
   if(S.log.on||!CU)return;
   const sid="t7_"+Date.now();
-  if(!S.trip.on){
-    S.trip={on:true,start:Date.now(),dist:0,elapsed:0,maxSpd:0};
-    S.elevPos=0;S.elevNeg=0;S.prevAlt=S.alt||null;
-    S.prevPos=S.lat?{lat:S.lat,lon:S.lon}:null;
-  }
-  S.log={on:true,sid,pts:0,buf:[],place:null};
-  $id("savedMsg").style.display="none";
-  if(S.lat)getPlace(S.lat,S.lon).then(p=>{S.log.place=p;});
-  // Crea documento sessione su Firestore (per-utente)
-  await setDoc(doc(db,"users",CU.uid,"sessions",sid),{
-    startedAt:serverTimestamp(),uid:CU.uid,
-    startLat:S.lat,startLon:S.lon,
-    notes:$id("notesIn").value,
-  }).catch(()=>{});
+  if(!S.trip.on){S.trip={on:true,start:Date.now(),dist:0,elapsed:0,maxSpd:0};S.elevPos=0;S.elevNeg=0;S.prevAlt=S.alt||null;S.prevPos=S.lat?{lat:S.lat,lon:S.lon}:null;}
+  S.log={on:true,sid,pts:0,buf:[],startPlace:null,endPlace:null};$id("savedMsg").style.display="none";
+  if(S.lat)getPlace(S.lat,S.lon).then(p=>{S.log.startPlace=p;});
+  await setDoc(doc(db,"users",CU.uid,"sessions",sid),{startedAt:serverTimestamp(),uid:CU.uid,startLat:S.lat,startLon:S.lon,notes:$id("notesIn").value}).catch(()=>{});
   logIv=setInterval(async()=>{
     if(!S.lat)return;
-    const pt={ts:Date.now(),lat:S.lat,lon:S.lon,
-      spd:Math.round(S.spd*10)/10,alt:Math.round(S.alt*10)/10,
-      hdg:S.hdg??S.compass,acc:S.acc,
-      temp:S.weather?.temp??null,wind:S.weather?.wind??null,
-      dist:Math.round(S.trip.dist),elapsed:S.trip.elapsed,
-      eP:Math.round(S.elevPos),eN:Math.round(S.elevNeg)};
+    const pt={ts:Date.now(),lat:S.lat,lon:S.lon,spd:Math.round(S.spd*10)/10,alt:Math.round(S.alt*10)/10,hdg:S.hdg??S.compass,acc:S.acc,temp:S.weather?.temp??null,wind:S.weather?.wind??null,dist:Math.round(S.trip.dist),elapsed:S.trip.elapsed,eP:Math.round(S.elevPos),eN:Math.round(S.elevNeg)};
     S.log.pts++;S.log.buf.push(pt);
-    // Salva punto su Firestore
     addDoc(collection(db,"users",CU.uid,"sessions",sid,"points"),pt)
       .then(()=>{$id("lSync").textContent="✓";$id("lSync").style.color="var(--alt)";})
       .catch(()=>{$id("lSync").textContent="⚠";$id("lSync").style.color="var(--spd)";});
   },LOG_IV);
 }
-
-async function stopLog(reason){
+async function stopLog(reason,emergency=false){
   if(!S.log.on||!CU)return;
   clearInterval(logIv);
-  const place=S.log.place||"Luogo";
-  const fileName=buildName(place,S.trip.dist);
-  const summary={
-    id:S.log.sid,fileName,place,uid:CU.uid,
-    endedAt:new Date().toISOString(),
-    pts:S.log.pts,dist:Math.round(S.trip.dist),
-    elapsed:S.trip.elapsed,maxSpd:Math.round(S.trip.maxSpd),
-    eP:Math.round(S.elevPos),eN:Math.round(S.elevNeg),
-    notes:$id("notesIn").value,reason:reason||"manuale",
-    buf:S.log.buf,
+  S.log.on=false; S.trip.on=false; // blocca subito nuovi punti
+
+  // ── FASE 1: salvataggio immediato localStorage (sincrono, <5ms) ──
+  const startPlace=S.log.startPlace||"Luogo";
+  const snapTime=new Date().toISOString();
+  const summarySnap={
+    id:S.log.sid,fileName:"",startPlace,endPlace:"…",place:startPlace,
+    uid:CU.uid,endedAt:snapTime,
+    pts:S.log.pts,dist:Math.round(S.trip.dist),elapsed:S.trip.elapsed,
+    maxSpd:Math.round(S.trip.maxSpd),eP:Math.round(S.elevPos),eN:Math.round(S.elevNeg),
+    notes:$id("notesIn")?.value||"",reason:reason||"manuale",
+    buf:S.log.buf,lat:S.lat,lon:S.lon,_pending:true
   };
-  // Aggiorna documento sessione
-  await updateDoc(doc(db,"users",CU.uid,"sessions",S.log.sid),{
-    ...summary, endedAt:serverTimestamp()
-  }).catch(()=>{});
-  // Salva anche in localStorage come backup
+  // Salva subito con flag _pending — sopravvive anche se il browser muore ora
   const arr=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]");
-  arr.push(summary);
+  arr.push(summarySnap);
   localStorage.setItem("t7v2_"+CU.uid,JSON.stringify(arr));
-  S.log.on=false;S.trip.on=false;
-  $id("lSync").textContent="—";
-  const msg=$id("savedMsg");
-  msg.style.display="block";msg.textContent=`✅ ${fileName}`;
-  sendEmail(summary);
-}
 
-/* ════════════════════════════════════════════════════
-   GEOCODING & FILENAME
-════════════════════════════════════════════════════ */
-async function getPlace(la,lo){
+  try{ $id("lSync").textContent="💾"; }catch{}
+
+  // ── FASE 2: operazioni lente in background (geocoding, Firestore, file, email) ──
+  // Se emergency=true, salta geocoding e usa coordinate
+  const endPlace=(!emergency&&S.lat)
+    ? await Promise.race([
+        getPlace(S.lat,S.lon).catch(()=>"Luogo"),
+        new Promise(r=>setTimeout(()=>r("Luogo"),2500)) // timeout 2.5s
+      ])
+    : (S.lat?`${S.lat.toFixed(3)},${S.lon.toFixed(3)}`:"Luogo");
+
+  const fileName=buildName(startPlace,endPlace,S.trip.dist);
+  const summary={...summarySnap,fileName,endPlace,_pending:false};
+
+  // Aggiorna localStorage con fileName definitivo
+  summary._checkpoint=false;
+  const arr2=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]");
+  const idx=arr2.findIndex(x=>x.id===summary.id);
+  if(idx>=0)arr2[idx]=summary; else arr2.push(summary);
+  localStorage.setItem("t7v2_"+CU.uid,JSON.stringify(arr2));
+
+  // Firestore (non bloccante)
+  updateDoc(doc(db,"users",CU.uid,"sessions",S.log.sid),
+    {...summary,endedAt:serverTimestamp(),buf:[]}) // non salvare buf in Firestore (troppo grande)
+    .then(()=>{try{$id("lSync").textContent="☁️";}catch{}})
+    .catch(()=>{try{$id("lSync").textContent="⚠️";}catch{}});
+
   try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&zoom=10`,{headers:{"Accept-Language":"it"}});
-    const d=await r.json(),a=d.address;
-    return(a.town||a.city||a.village||a.municipality||"Luogo").replace(/[\/\\:*?"<>|,]/g,"").trim();
-  }catch{return"Luogo";}
+    $id("lSync").textContent="—";
+    const msg=$id("savedMsg");
+    msg.style.display="block";
+    msg.textContent="✅ "+fileName+(emergency?" (shutdown auto)":"")+" — salvataggio…";
+    await saveToFolder(summary);
+    sendEmail(summary);
+  }catch(e){console.error("stopLog UI:",e);}
 }
-function buildName(place,distM){
+async function getPlace(la,lo){try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&zoom=10`,{headers:{"Accept-Language":"it"}});const d=await r.json(),a=d.address;return(a.town||a.city||a.village||a.municipality||"Luogo").replace(/[\/\\:*?"<>|,]/g,"").trim();}catch{return"Luogo";}}
+function buildName(startPlace,endPlace,distM){
   const n=new Date();
-  const dd=String(n.getDate()).padStart(2,"0"),mm=String(n.getMonth()+1).padStart(2,"0"),yy=n.getFullYear();
+  const dd=String(n.getDate()).padStart(2,"0");
+  const mm=String(n.getMonth()+1).padStart(2,"0");
+  const yy=n.getFullYear();
   const km=distM>=1000?(distM/1000).toFixed(1)+"km":Math.round(distM)+"m";
-  return`${dd}-${mm}-${yy}_${place}_${km}`;
+  const clean=s=>s.replace(/[\/\\:*?"<>|,]/g,"").trim().slice(0,30);
+  // se partenza e arrivo sono uguali (giro ad anello) usa solo uno
+  const loc=clean(startPlace)===clean(endPlace)
+    ? clean(startPlace)
+    : clean(startPlace)+"_"+clean(endPlace);
+  return`${dd}-${mm}-${yy}_${loc}_${km}`;
 }
-
-/* ════════════════════════════════════════════════════
-   EMAIL — indirizzo dall'utente loggato
-════════════════════════════════════════════════════ */
-async function sendEmail(s){
+async function sendEmail(s,retry=false){
   const el=$id("savedMsg");
-  const toEmail = UP.notifyEmail || CU?.email;
-  if(!toEmail){el.textContent="⚠️ Nessuna email configurata nel profilo.";return;}
-  el.textContent="📧 Invio email a "+toEmail+"…";
-  try{
-    const csv=buildCSV(s.buf);
-    const csvT=csv.length>40000?csv.slice(0,40000)+"\n…(troncato)":csv;
-    await emailjs.send(EMAILJS_SVC,EMAILJS_TPL,{
-      to_email:   toEmail,
-      file_name:  s.fileName,
-      start_place:s.place,
-      distance:   fmtD(s.dist),
-      duration:   fmtT(s.elapsed),
-      max_speed:  s.maxSpd+" km/h",
-      elev_pos:   "+"+s.eP+" m",
-      elev_neg:   "-"+s.eN+" m",
-      csv_data:   csvT,
-    });
-    el.textContent=`✅ Email inviata a ${toEmail}`;
-  }catch(e){
-    el.textContent="⚠️ Email non inviata ("+s.fileName+")";
-    console.error("EmailJS:",e);
+  const mainEmail=UP.notifyEmail||CU?.email;
+  if(!mainEmail){
+    el.style.display="block";
+    el.innerHTML='⚠️ Nessuna email nel profilo. <a href="#" onclick="openProfModal();return false;" style="color:var(--hdg)">Imposta ora</a>';
+    return;
+  }
+  // Lista completa destinatari (principale + extra, deduplicati)
+  const allEmails=[mainEmail,...(UP.extraEmails||[])].filter((e,i,a)=>e&&a.indexOf(e)===i);
+  if(!retry) el.textContent=(el.textContent||"")+" 📧…";
+
+  const baseParams={
+    file_name:   s.fileName||s.id,
+    start_place: s.startPlace||s.place||"—",
+    end_place:   s.endPlace||s.place||"—",
+    distance:    fmtD(s.dist||0),
+    duration:    fmtT(s.elapsed||0),
+    max_speed:   (s.maxSpd||0)+" km/h",
+    elev_pos:    "+"+(s.eP||0)+" m",
+    elev_neg:    "-"+(s.eN||0)+" m",
+    points:      String(s.pts||0),
+    notes:       s.notes||"—",
+    csv_data:    "— (file salvato in cartella locale) —",
+  };
+
+  // Invia a ciascun destinatario
+  const results=await Promise.allSettled(
+    allEmails.map(toEmail=>
+      emailjs.send(EMAILJS_SVC,EMAILJS_TPL,{...baseParams,to_email:toEmail})
+    )
+  );
+
+  const ok=results.filter(r=>r.status==="fulfilled"&&r.value?.status===200).length;
+  const fail=results.length-ok;
+
+  if(fail===0){
+    el.textContent="✅ "+s.fileName+" — email inviata a "+allEmails.length+" destinatar"+(allEmails.length===1?"io":"i");
+  } else {
+    window._lastSession=s;
+    const errMsg=results.find(r=>r.status==="rejected")?.reason?.text||"errore";
+    el.innerHTML="✅ "+s.fileName
+      +(ok>0?" — "+ok+"/"+allEmails.length+" email inviate":"")
+      +" ⚠️ <em style='font-size:10px'>"+errMsg+"</em>"
+      +" <button onclick='sendEmail(window._lastSession,true)'"
+      +" style='margin-left:6px;background:var(--muted2);border:1px solid var(--edge);"
+      +"color:var(--txt);font-family:Orbitron,sans-serif;font-size:10px;"
+      +"padding:3px 8px;border-radius:5px;cursor:pointer'>RIPROVA</button>";
   }
 }
-function buildCSV(buf){
-  const h=["ts","lat","lon","spd","alt","hdg","acc","temp","wind","dist","elapsed","eP","eN"].join(",");
-  const rows=(buf||[]).map(p=>[new Date(p.ts).toISOString(),p.lat,p.lon,p.spd,p.alt,p.hdg,p.acc,p.temp,p.wind,p.dist,p.elapsed,p.eP,p.eN].join(","));
-  return[h,...rows].join("\n");
+function buildCSV(buf){const h=["ts","lat","lon","spd","alt","hdg","acc","temp","wind","dist","elapsed","eP","eN"].join(",");const rows=(buf||[]).map(p=>[new Date(p.ts).toISOString(),p.lat,p.lon,p.spd,p.alt,p.hdg,p.acc,p.temp,p.wind,p.dist,p.elapsed,p.eP,p.eN].join(","));return[h,...rows].join("\n");}
+
+/* ── SALVATAGGIO CARTELLA LOCALE (File System Access API) ── */
+let _dirHandle=null; // handle cartella scelto dall'utente, persiste in sessione
+
+async function saveToFolder(s){
+  const msg=$id("savedMsg");
+  const csv=buildCSV(s.buf||[]);
+  const gpx=buildGPX(s);
+
+  // Se File System Access API non è supportata → download classico
+  if(!window.showDirectoryPicker){
+    dl(csv,"text/csv",s.fileName+".csv");
+    dl(gpx,"application/gpx+xml",s.fileName+".gpx");
+    msg.textContent="✅ "+s.fileName+" — file scaricati";
+    return;
+  }
+
+  // Chiedi cartella solo se non già scelta in questa sessione
+  if(!_dirHandle){
+    try{
+      _dirHandle=await window.showDirectoryPicker({
+        id:"t7logger",
+        mode:"readwrite",
+        startIn:"documents"
+      });
+    }catch(e){
+      if(e.name!=="AbortError"){
+        // Fallback download se l'utente ha rifiutato o errore
+        dl(csv,"text/csv",s.fileName+".csv");
+        dl(gpx,"application/gpx+xml",s.fileName+".gpx");
+        msg.textContent="✅ "+s.fileName+" — cartella non scelta, file scaricati";
+      }
+      return;
+    }
+  }
+
+  try{
+    // Salva CSV
+    const csvFile=await _dirHandle.getFileHandle(s.fileName+".csv",{create:true});
+    const csvW=await csvFile.createWritable();
+    await csvW.write(csv); await csvW.close();
+    // Salva GPX
+    const gpxFile=await _dirHandle.getFileHandle(s.fileName+".gpx",{create:true});
+    const gpxW=await gpxFile.createWritable();
+    await gpxW.write(gpx); await gpxW.close();
+
+    msg.textContent="✅ "+s.fileName+" salvato in: "+_dirHandle.name;
+  }catch(e){
+    console.error("saveToFolder:",e);
+    // Se il permesso è scaduto, resetta e riprova al prossimo giro
+    if(e.name==="NotAllowedError"||e.name==="SecurityError") _dirHandle=null;
+    // Fallback download
+    dl(csv,"text/csv",s.fileName+".csv");
+    dl(gpx,"application/gpx+xml",s.fileName+".gpx");
+    msg.textContent="✅ "+s.fileName+" — file scaricati (cartella non accessibile)";
+  }
 }
 
-/* ════════════════════════════════════════════════════
-   TABS
-════════════════════════════════════════════════════ */
-window.goTab=function(i){
-  document.querySelectorAll(".screen").forEach((s,j)=>s.classList.toggle("on",j===i));
-  document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("on",j===i));
-  if(i===2)renderHistory();
+// Tasto per cambiare cartella manualmente (nel profilo o nel logger)
+window.chooseFolder=async function(){
+  try{
+    _dirHandle=await window.showDirectoryPicker({id:"t7logger",mode:"readwrite",startIn:"documents"});
+    $id("folderName").textContent="📁 "+_dirHandle.name;
+  }catch(e){if(e.name!=="AbortError")console.error(e);}
 };
 
-/* ════════════════════════════════════════════════════
-   HISTORY — carica da Firestore per questo utente
-════════════════════════════════════════════════════ */
+function buildGPX(s){
+  const pts=(s.buf||[]).filter(p=>p.lat&&p.lon)
+    .map(p=>`  <trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt??0}</ele><time>${new Date(p.ts).toISOString()}</time></trkpt>`)
+    .join("\n");
+  return`<?xml version="1.0" encoding="UTF-8"?>`
+    +`<gpx version="1.1" creator="DZ7618 Datalogger">`
+    +`<metadata><name>${s.fileName}</name></metadata>`
+    +`<trk><name>${s.fileName}</name><trkseg>\n${pts}\n</trkseg></trk></gpx>`;
+}
+
+/* ── TABS ── */
+window.goTab=function(i){
+  document.querySelectorAll(".screen").forEach((s,j)=>s.classList.toggle("on",j===i));
+  [0,1,2].forEach(j=>{$id("ht"+j)?.classList.toggle("on",j===i);});
+  if(i===2)renderHistory();
+};
+window.manualStop=async function(){
+  if(!S.log.on)return;
+  await stopLog("manuale");
+};
+
+/* ── HISTORY ── */
 async function renderHistory(){
   if(!CU){$id("histList").innerHTML='<div style="text-align:center;color:var(--muted);padding:3em 0">Accedi per vedere la cronologia.</div>';return;}
   $id("histList").innerHTML='<div style="text-align:center;color:var(--muted);padding:2em 0">Caricamento…</div>';
   try{
-    // Prova Firestore prima, fallback su localStorage
     const q=query(collection(db,"users",CU.uid,"sessions"),orderBy("endedAt","desc"));
     const snap=await getDocs(q);
-    let sessions=[];
-    snap.forEach(d=>{
-      const data=d.data();
-      if(data.endedAt)sessions.push({id:d.id,...data});
-    });
-    // Merge con localStorage (contiene i buf, Firestore no)
+    let sessions=[];snap.forEach(d=>{const data=d.data();if(data.endedAt)sessions.push({id:d.id,...data});});
     const local=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]");
-    const localMap=Object.fromEntries(local.map(s=>[s.id,s]));
-    sessions=sessions.map(s=>({...s,...(localMap[s.id]||{})}));
-    if(!sessions.length){
-      sessions=local.slice().reverse();
-    }
+    const lm=Object.fromEntries(local.map(s=>[s.id,s]));
+    sessions=sessions.map(s=>({...s,...(lm[s.id]||{})}));
+    if(!sessions.length)sessions=local.slice().reverse();
     displayHistory(sessions);
-  }catch{
-    const sessions=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]").slice().reverse();
-    displayHistory(sessions);
-  }
+  }catch{displayHistory(JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]").slice().reverse());}
 }
 function displayHistory(sessions){
   const el=$id("histList");
-  if(!sessions.length){
-    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:3em 0;font-size:.9em">Nessuna sessione.<br><br>🏍️ Guida oltre 5 km/h per registrare.</div>';
-    return;
-  }
+  if(!sessions.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:3em 0;font-size:13px">Nessuna sessione.<br><br>🏍️ Guida oltre 5 km/h per registrare.</div>';return;}
+  window._hs=sessions;
   el.innerHTML='<div class="slist">'+sessions.map((s,i)=>`
     <div class="scard" id="sc${i}">
       <div class="shdr" onclick="toggleCard(${i})">
@@ -1207,7 +1412,7 @@ function displayHistory(sessions){
           <span class="pill">⚡${s.maxSpd??'—'}km/h</span>
           <span class="pill">▲${s.eP??'—'}m ▼${s.eN??'—'}m</span>
         </div>
-        <span style="color:var(--muted);font-size:.8em;margin-left:.4em">▼</span>
+        <span style="color:var(--muted);font-size:.8em;margin-left:6px">▼</span>
       </div>
       <div class="sbody" id="sb${i}" style="display:none">
         ${s.notes?`<div class="snotes">📝 ${s.notes}</div>`:""}
@@ -1223,49 +1428,74 @@ function displayHistory(sessions){
         </div>
       </div>
     </div>`).join("")+"</div>";
-  // Salva sessions per export
-  window._histSessions=sessions;
 }
-window.toggleCard=i=>{
-  const b=$id("sb"+i);const open=b.style.display==="none";
-  b.style.display=open?"flex":"none";
-  $id("sc"+i).classList.toggle("open",open);
-};
-window.xCSV=i=>{
-  const s=window._histSessions[i];
-  dl(buildCSV(s.buf||[]),"text/csv",(s.fileName||s.id)+".csv");
-};
-window.xGPX=i=>{
-  const s=window._histSessions[i];
-  const pts=(s.buf||[]).filter(p=>p.lat&&p.lon)
-    .map(p=>`  <trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt??0}</ele><time>${new Date(p.ts).toISOString()}</time></trkpt>`).join("\n");
-  dl(`<?xml version="1.0"?><gpx version="1.1" creator="T7 Datalogger"><trk><n>${s.fileName||s.id}</n><trkseg>\n${pts}\n</trkseg></trk></gpx>`,
-    "application/gpx+xml",(s.fileName||s.id)+".gpx");
-};
-window.xDel=async(sid,i)=>{
-  if(!confirm("Eliminare questa sessione?"))return;
-  // Rimuovi da Firestore
-  await updateDoc(doc(db,"users",CU.uid,"sessions",sid),{deleted:true}).catch(()=>{});
-  // Rimuovi da localStorage
-  const arr=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]").filter(s=>s.id!==sid);
-  localStorage.setItem("t7v2_"+CU.uid,JSON.stringify(arr));
-  renderHistory();
-};
-function dl(data,mime,name){
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([data],{type:mime}));
-  a.download=name;a.click();
-}
+window.toggleCard=i=>{const b=$id("sb"+i);const op=b.style.display==="none";b.style.display=op?"flex":"none";$id("sc"+i).classList.toggle("open",op);};
+window.xCSV=i=>{const s=window._hs[i];dl(buildCSV(s.buf||[]),"text/csv",(s.fileName||s.id)+".csv");};
+window.xGPX=i=>{const s=window._hs[i];dl(buildGPX(s),"application/gpx+xml",(s.fileName||s.id)+".gpx");};
+window.xDel=async(sid,i)=>{if(!confirm("Eliminare?"))return;await updateDoc(doc(db,"users",CU.uid,"sessions",sid),{deleted:true}).catch(()=>{});const arr=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]").filter(s=>s.id!==sid);localStorage.setItem("t7v2_"+CU.uid,JSON.stringify(arr));renderHistory();};
+function dl(data,mime,name){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:mime}));a.download=name;a.click();}
 
-/* ════════════════════════════════════════════════════
-   SERVICE WORKER
-════════════════════════════════════════════════════ */
-if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
-}
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 
-window.addEventListener("resize",()=>{buildTape();moveTape(S.alt);});
+// ── Recupero sessioni interrotte (shutdown improvviso) ──
+async function recoverPendingSessions(){
+  if(!CU)return;
+  const arr=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]");
+  const pending=arr.filter(s=>s._pending);
+  if(!pending.length)return;
+  console.log("Trovate",pending.length,"sessioni pending/checkpoint da completare");
+  for(const s of pending){
+    // Completa geocoding se aveva coordinate
+    if(s.endPlace==="…"&&s.lat){
+      s.endPlace=await getPlace(s.lat,s.lon).catch(()=>"Luogo");
+    }
+    if(!s.fileName||s.fileName===""){
+      s.fileName=buildName(s.startPlace||"Luogo",s.endPlace||"Luogo",s.dist||0);
+    }
+    s._pending=false; s._checkpoint=false;
+    // Aggiorna localStorage
+    const arr2=JSON.parse(localStorage.getItem("t7v2_"+CU.uid)||"[]");
+    const i=arr2.findIndex(x=>x.id===s.id);
+    if(i>=0)arr2[i]=s; else arr2.push(s);
+    localStorage.setItem("t7v2_"+CU.uid,JSON.stringify(arr2));
+    // Completa su Firestore
+    updateDoc(doc(db,"users",CU.uid,"sessions",s.id),
+      {fileName:s.fileName,endPlace:s.endPlace,_pending:false,endedAt:serverTimestamp()})
+      .catch(()=>{});
+    // Notifica utente
+    const msg=$id("savedMsg");
+    if(msg){
+      msg.style.display="block";
+      msg.textContent="🔄 Sessione recuperata: "+s.fileName;
+      setTimeout(()=>{if(msg.textContent.startsWith("🔄"))msg.style.display="none";},5000);
+    }
+    console.log("Sessione recuperata:",s.fileName);
+  }
+}
+// Lancia il recupero dopo il login
+setTimeout(recoverPendingSessions,2000);
 render();
+
+// Enter key sul form login
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter")return;
+  const as=$id("authScreen");
+  if(as&&!as.classList.contains("hidden"))doEmailAuth();
+});
+
+// Mostra errore auth se Firebase non è configurato
+setTimeout(()=>{
+  if(!CU && !$id("authScreen").classList.contains("hidden")){
+    // Test connessione Firebase silenzioso
+    import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
+      .then(()=>{}) // ok
+      .catch(()=>{
+        const err=$id("authErr");
+        err.textContent="Impossibile connettersi a Firebase. Controlla la connessione.";
+        err.classList.add("on");err.style.display="block";
+      });
+  }
+},3000);
 </script>
 </body>
 </html>
