@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>T7 Datalogger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+/* ═══ TEMI ORARI ═══════════════════════════════════════ */
+:root{
+  --bg:#0a0a0b;--bg2:#111113;--bg3:#18181c;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8e8ea;--text2:#505058;--text3:#888;
+  --acc1:#ff4e00;--acc2:#00d4ff;--acc3:#a8ff78;--acc4:#ffcc00;
+  --spd-shadow:rgba(255,78,0,.45);
+  --fd:'Orbitron',monospace;--fb:'Rajdhani',sans-serif;
+  --r:clamp(4px,.8vw,9px);
+}
+body.theme-alba{--bg:#140a00;--bg2:#221200;--bg3:#2e1800;--border:rgba(255,150,0,.1);--border2:rgba(255,150,0,.2);--text:#fff0d8;--text2:#8a5520;--text3:#c07840;--acc1:#ff8800;--acc2:#ffcc33;--acc3:#ffe066;--acc4:#ff5500;--spd-shadow:rgba(255,136,0,.5);}
+body.theme-giorno{--bg:#dde3ec;--bg2:#f5f7fa;--bg3:#c8d0dc;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.15);--text:#0d1520;--text2:#7888a0;--text3:#556070;--acc1:#cc2800;--acc2:#0077bb;--acc3:#1a7a00;--acc4:#aa6600;--spd-shadow:rgba(200,40,0,.25);}
+body.theme-tramonto{--bg:#080412;--bg2:#10071e;--bg3:#180b28;--border:rgba(180,80,255,.08);--border2:rgba(180,80,255,.15);--text:#f0d0ff;--text2:#604880;--text3:#9060b8;--acc1:#ff4488;--acc2:#bb33ff;--acc3:#ff8833;--acc4:#ffcc00;--spd-shadow:rgba(255,68,136,.5);}
+body.theme-sera{--bg:#080600;--bg2:#100e00;--bg3:#181400;--border:rgba(255,160,0,.07);--border2:rgba(255,160,0,.14);--text:#fff5d8;--text2:#584810;--text3:#907030;--acc1:#ff9900;--acc2:#ff6600;--acc3:#ffdd44;--acc4:#ff4400;--spd-shadow:rgba(255,153,0,.45);}
+body.theme-notte{--bg:#010408;--bg2:#060b12;--bg3:#0a1018;--border:rgba(0,160,255,.07);--border2:rgba(0,160,255,.14);--text:#b8d8f8;--text2:#1e3050;--text3:#3a5878;--acc1:#0077ff;--acc2:#00ddff;--acc3:#33ffcc;--acc4:#ff9900;--spd-shadow:rgba(0,120,255,.5);}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--fb);
+  width:100%;height:100%;overflow:hidden;
+  display:flex;flex-direction:column;height:100dvh;width:100dvw;
+  transition:background .9s,color .5s;
+}
+
+/* ── PORTRAIT LOCK ── */
+.rotate-hint{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;
+  flex-direction:column;align-items:center;justify-content:center;gap:2em;
+  font-family:var(--fd);font-size:1em;color:var(--text3);text-align:center;padding:2em;}
+.rotate-icon{font-size:4em;animation:rotpulse 2s ease-in-out infinite;}
+@keyframes rotpulse{0%,100%{transform:rotate(-15deg);opacity:.5}50%{transform:rotate(15deg);opacity:1}}
+@media(orientation:portrait){.rotate-hint{display:flex;}}
+
+/* ── GPS PERMISSION OVERLAY ── */
+.gps-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;
+  align-items:center;justify-content:center;flex-direction:column;gap:1.5em;
+  text-align:center;padding:2em;}
+.gps-overlay.on{display:flex;}
+.gps-overlay h2{font-family:var(--fd);font-size:1.6em;color:var(--acc2);}
+.gps-overlay p{font-size:1em;color:var(--text3);max-width:28em;line-height:1.6;}
+.gps-btn{font-family:var(--fd);font-size:1.1em;padding:.65em 2em;border:none;
+  border-radius:var(--r);background:var(--acc2);color:#000;cursor:pointer;letter-spacing:.1em;}
+.gps-overlay-err{color:var(--acc1);font-size:.85em;margin-top:.5em;display:none;}
+.gps-overlay code{display:inline-block;margin:.3em 0;background:rgba(255,255,255,.12);
+  padding:.25em .6em;border-radius:5px;font-size:.85em;letter-spacing:.03em;
+  font-family:monospace;word-break:break-all;}
+.gps-overlay p{font-size:.95em;color:var(--text3);max-width:32em;line-height:1.75;text-align:left;}
+
+/* ── WEATHER ALERT ── */
+.weather-alert{display:none;position:fixed;top:3.5em;left:50%;transform:translateX(-50%);
+  background:rgba(255,60,0,.95);border:1px solid rgba(255,120,0,.8);
+  border-radius:var(--r);padding:.5em 1.8em .5em .8em;
+  font-family:var(--fd);font-size:.8em;color:#fff;z-index:1000;
+  box-shadow:0 4px 20px rgba(255,60,0,.4);max-width:90vw;
+  text-align:center;cursor:pointer;animation:alertpop .3s ease;}
+.weather-alert.on{display:flex;gap:.6em;align-items:center;}
+@keyframes alertpop{from{opacity:0;transform:translateX(-50%) translateY(-.8em)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.alert-close{position:absolute;right:.4em;top:.15em;font-size:1em;opacity:.7;}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:0 1em;background:var(--bg2);border-bottom:1px solid var(--border);
+  flex-shrink:0;height:clamp(28px,4vh,42px);}
+.brand{font-family:var(--fd);font-size:clamp(.85em,1.8vh,1.4em);font-weight:900;letter-spacing:.12em;
+  background:linear-gradient(90deg,var(--acc1),var(--acc4));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-right{display:flex;align-items:center;gap:.8em;}
+.theme-badge{font-family:var(--fd);font-size:.65em;color:var(--text2);}
+.auto-badge{font-family:var(--fd);font-size:.65em;background:rgba(168,255,120,.1);
+  border:1px solid var(--acc3);border-radius:2em;padding:.15em .6em;color:var(--acc3);display:none;}
+.auto-badge.on{display:block;}
+.gps-row{display:flex;align-items:center;gap:.35em;}
+.dot{width:.55em;height:.55em;border-radius:50%;background:var(--text2);}
+.dot.ok{background:var(--acc3);box-shadow:0 0 .4em var(--acc3);}
+.dot.err{background:var(--acc1);}
+.dot.wait{background:var(--acc4);animation:blink 1.2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.gps-lbl{font-family:var(--fd);font-size:.62em;color:var(--text2);}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab{flex:1;padding:clamp(4px,.9vh,8px) 0;background:none;border:none;
+  border-bottom:2px solid transparent;color:var(--text2);
+  font-family:var(--fd);font-size:.75em;letter-spacing:.1em;cursor:pointer;
+  transition:color .2s,border-color .2s;}
+.tab.on{color:var(--acc1);border-bottom-color:var(--acc1);}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:hidden;padding:clamp(3px,.5vh,7px) clamp(3px,.5vw,7px);}
+.screen{display:none;height:100%;}
+.screen.on{display:block;}
+
+/* ══════════════════════════════════════════════════
+   DASHBOARD  —  3 col × 2 righe
+   [velocità] [bussola + pannello-dx] [altimetro]
+   [──────────── barra metriche ────────────────]
+══════════════════════════════════════════════════ */
+.dash-grid{
+  display:grid;
+  grid-template-columns: clamp(75px,10vw,120px) 1fr clamp(70px,9.5vw,110px);
+  grid-template-rows: 1fr clamp(52px,8.5vh,76px);
+  gap:clamp(3px,.5vw,6px);
+  height:100%;
+}
+
+/* ── VELOCITÀ ── */
+.speed-col{
+  grid-column:1;grid-row:1;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:.5em;position:relative;overflow:hidden;
+}
+.speed-col::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 60%,var(--spd-shadow) 0%,transparent 70%);
+  opacity:.18;pointer-events:none;}
+.speed-val{font-family:var(--fd);font-size:clamp(1.8rem,6vw,4rem);font-weight:900;line-height:1;
+  color:var(--acc1);text-shadow:0 0 .8em var(--spd-shadow);position:relative;z-index:1;}
+.speed-unit{font-family:var(--fd);font-size:.72em;letter-spacing:.2em;color:var(--acc1);opacity:.6;z-index:1;}
+.speed-max{font-family:var(--fd);font-size:.58em;color:var(--text2);margin-top:.6em;z-index:1;letter-spacing:.05em;}
+.rec-dot{position:absolute;top:.5em;right:.5em;width:.6em;height:.6em;border-radius:50%;
+  background:var(--acc1);display:none;animation:recblink .8s infinite;}
+@keyframes recblink{0%,100%{opacity:1}50%{opacity:0}}
+.rec-dot.on{display:block;}
+
+/* ── COLONNA BUSSOLA (centrale) ── */
+.compass-col{
+  grid-column:2;grid-row:1;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  display:grid;
+  grid-template-columns: 1fr clamp(105px,14vw,155px);
+  overflow:hidden;
+}
+/* Bussola sinistra */
+.compass-main{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.5em;padding:.8em .6em;
+}
+.compass-ring{
+  width:min(clamp(100px,17vh,190px), 90%);
+  aspect-ratio:1;border-radius:50%;
+  border:2px solid var(--border2);position:relative;
+  background:radial-gradient(circle,var(--bg3) 20%,var(--bg2) 100%);
+  box-shadow:0 0 2em rgba(0,0,0,.5),inset 0 0 1.5em rgba(0,0,0,.4);
+}
+.compass-ring::before{content:'';position:absolute;inset:5%;border-radius:50%;
+  border:1px solid rgba(255,255,255,.04);}
+.compass-ring::after{content:'';position:absolute;inset:0;border-radius:50%;
+  background:repeating-conic-gradient(var(--border2) 0deg,var(--border2) 1deg,transparent 1deg,transparent 45deg);
+  opacity:.3;}
+.c-card{position:absolute;font-family:var(--fd);font-weight:900;color:var(--text2);z-index:2;
+  font-size:clamp(8px,1.4vh,14px);}
+.c-N{top:4%;left:50%;transform:translateX(-50%);color:var(--acc1);font-size:clamp(10px,1.7vh,16px);}
+.c-S{bottom:4%;left:50%;transform:translateX(-50%);}
+.c-E{right:4%;top:50%;transform:translateY(-50%);}
+.c-O{left:4%;top:50%;transform:translateY(-50%);}
+.needle-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transition:transform .3s ease;z-index:3;}
+.needle-n{position:absolute;width:0;height:0;
+  border-left:clamp(4px,.5vw,7px) solid transparent;
+  border-right:clamp(4px,.5vw,7px) solid transparent;
+  border-bottom:clamp(38px,6.5vh,70px) solid var(--acc1);
+  bottom:50%;transform-origin:bottom center;
+  filter:drop-shadow(0 0 .5em var(--acc1));}
+.needle-s{position:absolute;width:0;height:0;
+  border-left:clamp(3px,.4vw,5px) solid transparent;
+  border-right:clamp(3px,.4vw,5px) solid transparent;
+  border-top:clamp(26px,4.5vh,48px) solid rgba(255,255,255,.2);
+  top:50%;transform-origin:top center;}
+.needle-dot{width:clamp(7px,1.1vh,12px);height:clamp(7px,1.1vh,12px);border-radius:50%;
+  background:var(--acc4);position:absolute;z-index:4;
+  box-shadow:0 0 .7em var(--acc4);border:2px solid var(--bg2);}
+.compass-info{display:flex;gap:.5em;align-items:baseline;}
+.compass-deg{font-family:var(--fd);font-size:clamp(1rem,3.2vh,2.5rem);font-weight:900;}
+.compass-dir{font-family:var(--fd);font-size:clamp(.85rem,2.8vh,2.1rem);font-weight:900;color:var(--acc1);}
+
+/* Pannello destra */
+.compass-right{
+  border-left:1px solid var(--border);
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+}
+/* Meteo */
+.weather-cell{padding:.55em .7em;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.5em;}
+.w-icon-big{font-size:clamp(1rem,2.2vh,1.8rem);flex-shrink:0;}
+.w-data{display:flex;flex-direction:column;gap:.1em;min-width:0;overflow:hidden;}
+.w-temp{font-family:var(--fd);font-size:clamp(.75rem,1.6vh,1.25rem);font-weight:700;color:var(--acc4);}
+.w-wind{font-size:.72em;color:var(--text2);}
+.w-desc{font-size:.68em;color:var(--text3);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.w-alert-btn{margin-left:auto;font-size:1.1em;cursor:pointer;flex-shrink:0;
+  animation:alertblink 1s ease-in-out infinite;display:none;}
+.w-alert-btn.on{display:block;}
+@keyframes alertblink{0%,100%{opacity:1}50%{opacity:.3}}
+/* GPS + coordinate */
+.gps-coords-box{padding:.55em .7em;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45em;}
+.gps-signal-row{display:flex;align-items:center;gap:.5em;}
+.gps-bars{display:flex;align-items:flex-end;gap:clamp(2px,.3vw,4px);height:clamp(16px,2.8vh,28px);}
+.gps-bar{width:clamp(6px,.9vw,11px);border-radius:2px 2px 0 0;
+  background:rgba(255,255,255,.07);transition:background .5s,box-shadow .5s;}
+.gps-bar:nth-child(1){height:20%;}
+.gps-bar:nth-child(2){height:40%;}
+.gps-bar:nth-child(3){height:62%;}
+.gps-bar:nth-child(4){height:82%;}
+.gps-bar:nth-child(5){height:100%;}
+.gps-bar.lit{background:var(--gps-color,#aaa);box-shadow:0 0 .4em var(--gps-color,#aaa);}
+.gps-quality-txt{font-family:var(--fd);font-size:.68em;font-weight:700;color:var(--gps-color,var(--text2));}
+.coords{font-size:.66em;color:var(--text2);font-family:monospace;text-align:center;line-height:1.6;}
+/* Idle */
+.idle-box{padding:.55em .7em;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;}
+.idle-lbl{font-family:var(--fd);font-size:.6em;letter-spacing:.07em;color:var(--text2);}
+.idle-val{font-family:var(--fd);font-size:clamp(.8rem,1.8vh,1.4rem);font-weight:700;color:var(--acc4);}
+.idle-bar-wrap{width:88%;height:clamp(4px,.6vh,6px);background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.idle-bar{height:100%;border-radius:3px;width:0%;transition:width .5s linear,background .5s;}
+
+/* ── ALTIMETRO ── */
+.altimeter-col{
+  grid-column:3;grid-row:1;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  display:flex;flex-direction:column;align-items:center;
+  padding:.5em .3em;overflow:hidden;
+}
+.alt-title{font-family:var(--fd);font-size:.6em;letter-spacing:.15em;color:var(--text2);
+  margin-bottom:.3em;flex-shrink:0;}
+.alt-instrument{flex:1;width:100%;position:relative;display:flex;
+  align-items:center;justify-content:center;overflow:hidden;}
+.alt-tape-wrap{width:clamp(38px,4.5vw,56px);height:100%;overflow:hidden;position:relative;
+  border-left:2px solid var(--border2);border-right:2px solid var(--border2);background:var(--bg3);}
+.alt-tape{position:absolute;left:0;right:0;transition:transform .5s ease;}
+.alt-tick{position:absolute;left:0;right:0;display:flex;align-items:center;height:20px;}
+.alt-tick-line{width:9px;height:1px;background:var(--border2);flex-shrink:0;}
+.alt-tick-line.major{width:16px;background:var(--text3);}
+.alt-tick-num{font-family:var(--fd);font-size:clamp(5px,.75vh,9px);color:var(--text3);margin-left:2px;line-height:1;}
+.alt-pointer{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;pointer-events:none;z-index:3;}
+.alt-pointer-line{flex:1;height:1px;background:var(--acc2);box-shadow:0 0 4px var(--acc2);}
+.alt-pointer-arrow{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
+  border-right:9px solid var(--acc2);filter:drop-shadow(0 0 3px var(--acc2));}
+.alt-trend{position:absolute;right:2px;top:50%;transform:translateY(-50%);
+  font-size:clamp(.6rem,1.2vh,1rem);opacity:.8;}
+.alt-readout{flex-shrink:0;margin-top:.3em;text-align:center;}
+.alt-val{font-family:var(--fd);font-size:clamp(.8rem,1.8vh,1.5rem);font-weight:700;color:var(--acc2);}
+.alt-m{font-family:var(--fd);font-size:.58em;color:var(--text2);letter-spacing:.07em;}
+
+/* ── BARRA METRICHE ── */
+.metrics-bar{
+  grid-column:1/4;grid-row:2;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:clamp(3px,.5vw,6px);
+}
+.mcard{background:var(--bg2);border:1px solid var(--border);
+  border-left:3px solid var(--acc,var(--text2));
+  border-radius:var(--r);padding:.3em .7em;
+  display:flex;flex-direction:column;justify-content:center;}
+.mlbl{font-family:var(--fd);font-size:.6em;letter-spacing:.07em;color:var(--text2);margin-bottom:.1em;}
+.mval{font-family:var(--fd);font-size:clamp(.8rem,1.8vh,1.45rem);font-weight:700;
+  color:var(--acc,var(--text));line-height:1.1;}
+.elev-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:.3em .7em;display:grid;grid-template-columns:1fr auto 1fr;gap:.2em;align-items:center;}
+.elev-side{display:flex;flex-direction:column;justify-content:center;}
+.elev-lbl{font-family:var(--fd);font-size:.56em;letter-spacing:.05em;color:var(--text2);}
+.elev-val{font-family:var(--fd);font-size:clamp(.7rem,1.6vh,1.25rem);font-weight:700;line-height:1.1;}
+.elev-pos{color:#44ff88;}
+.elev-neg{color:#ff6644;}
+.elev-divider{width:1px;height:65%;background:var(--border);align-self:center;}
+.gps-err{grid-column:1/-1;background:rgba(255,50,0,.1);border:1px solid var(--acc1);
+  border-radius:var(--r);padding:.3em .7em;font-size:.82em;color:var(--acc1);text-align:center;}
+
+/* ══ LOGGER ══ */
+.log-layout{display:grid;grid-template-columns:1fr 1fr;gap:clamp(5px,.8vw,12px);height:100%;}
+.log-left,.log-right{display:flex;flex-direction:column;gap:clamp(4px,.6vh,9px);overflow-y:auto;}
+.sec-title{font-family:var(--fd);font-size:.88em;letter-spacing:.15em;color:var(--text2);}
+.log-hdr{display:flex;justify-content:space-between;align-items:center;}
+.log-badge{font-family:var(--fd);font-size:.82em;}
+.notice{background:rgba(255,204,0,.07);border:1px solid rgba(255,204,0,.25);border-radius:var(--r);
+  padding:.5em .8em;font-size:.88em;line-height:1.5;color:var(--acc4);}
+.auto-info{background:rgba(168,255,120,.04);border:1px solid rgba(168,255,120,.15);border-radius:var(--r);
+  padding:.5em .8em;font-size:.88em;color:var(--acc3);line-height:1.5;}
+.notes-lbl{font-family:var(--fd);font-size:.7em;letter-spacing:.1em;color:var(--text2);margin-bottom:.2em;}
+.notes-in{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:.5em .8em;color:var(--text);font-family:var(--fb);font-size:1em;outline:none;width:100%;}
+.notes-in:focus{border-color:var(--acc2);}
+.lstats{display:grid;grid-template-columns:1fr 1fr;gap:clamp(4px,.5vw,8px);}
+.lstat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.5em;text-align:center;}
+.lstat-v{font-family:var(--fd);font-size:clamp(.75rem,1.7vh,1.35rem);font-weight:700;color:var(--acc2);}
+.lstat-l{font-family:var(--fd);font-size:.58em;letter-spacing:.07em;color:var(--text2);margin-top:.2em;}
+.live-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.7em;flex:1;}
+.live-t{font-family:var(--fd);font-size:.68em;letter-spacing:.12em;color:var(--acc1);margin-bottom:.5em;}
+.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:.2em .8em;font-size:.88em;}
+.lk{color:var(--text2);}
+.lv{font-family:var(--fd);font-size:.82em;font-weight:700;}
+.saved-ok{background:rgba(168,255,120,.07);border:1px solid rgba(168,255,120,.22);border-radius:var(--r);
+  padding:.5em .8em;font-size:.88em;color:var(--acc3);}
+
+/* ══ HISTORY ══ */
+.history-wrap{height:100%;overflow-y:auto;}
+.empty{text-align:center;color:var(--text2);padding:2em 1.5em;line-height:1.8;font-size:1em;}
+.slist{display:flex;flex-direction:column;gap:.4em;}
+.scard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.scard.open{border-color:var(--acc2);}
+.shdr{display:flex;align-items:center;gap:.5em;padding:.55em .85em;cursor:pointer;}
+.sdate{font-size:.82em;color:var(--text);flex:1;font-family:var(--fd);letter-spacing:.03em;}
+.pills{display:flex;gap:.3em;flex-wrap:wrap;}
+.pill{background:var(--bg3);border:1px solid var(--border);border-radius:2em;
+  padding:.1em .5em;font-family:var(--fd);font-size:.62em;letter-spacing:.04em;}
+.chev{color:var(--text2);font-size:.78em;}
+.sbody{padding:.55em .85em;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.5em;}
+.snotes{font-size:.88em;color:var(--acc4);font-style:italic;}
+.smeta{display:flex;gap:1em;font-size:.82em;color:var(--text2);flex-wrap:wrap;}
+.smeta strong{color:var(--text);}
+.sactions{display:flex;gap:.4em;}
+.abtn{flex:1;padding:.5em;border:1px solid var(--border);border-radius:var(--r);
+  background:var(--bg3);color:var(--text);font-family:var(--fd);font-size:.72em;letter-spacing:.06em;cursor:pointer;}
+.abtn.del{color:var(--acc1);border-color:rgba(255,80,0,.25);flex:0 0 3.2em;}
+</style>
+</head>
+<body class="theme-notte">
+
+<div class="rotate-hint"><div class="rotate-icon">⟳</div>Ruota il dispositivo in orizzontale</div>
+
+<!-- GPS permission overlay -->
+<div class="gps-overlay on" id="gpsOverlay">
+  <h2 id="gpsOverlayTitle">📍 Attiva GPS</h2>
+  <p id="gpsOverlayMsg">T7 Datalogger ha bisogno della tua posizione per funzionare.</p>
+  <button class="gps-btn" id="gpsOverlayBtn" onclick="requestGPS()">ATTIVA GPS</button>
+  <div class="gps-overlay-err" id="gpsOverlayErr"></div>
+</div>
+
+<!-- Weather alert -->
+<div class="weather-alert" id="weatherAlert" onclick="closeAlert()">
+  <span>⚠️</span><span id="alertText">Condizioni meteo avverse</span>
+  <span class="alert-close">✕</span>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="brand">T7 DATALOGGER</div>
+  <div class="hdr-right">
+    <div class="auto-badge" id="autoBadge">⏺ REC</div>
+    <div class="theme-badge" id="themeBadge">🌙 NOTTE</div>
+    <div class="gps-row">
+      <div class="dot wait" id="gpsDot"></div>
+      <span class="gps-lbl">GPS</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab on" onclick="showTab(0)">DASHBOARD</button>
+  <button class="tab" onclick="showTab(1)">LOGGER</button>
+  <button class="tab" onclick="showTab(2)">HISTORY</button>
+</div>
+
+<div class="main">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="screen on" id="s0">
+    <div class="dash-grid">
+
+      <!-- Velocità -->
+      <div class="speed-col">
+        <div class="rec-dot" id="recDot"></div>
+        <div class="speed-val" id="speedVal">0</div>
+        <div class="speed-unit">km/h</div>
+        <div class="speed-max" id="speedMax"></div>
+      </div>
+
+      <!-- Bussola + pannello dx -->
+      <div class="compass-col">
+        <div class="compass-main">
+          <div class="compass-ring">
+            <span class="c-card c-N">N</span>
+            <span class="c-card c-S">S</span>
+            <span class="c-card c-E">E</span>
+            <span class="c-card c-O">O</span>
+            <div class="needle-wrap" id="needleWrap">
+              <div class="needle-n"></div>
+              <div class="needle-s"></div>
+            </div>
+            <div class="needle-dot"></div>
+          </div>
+          <div class="compass-info">
+            <span class="compass-deg" id="compassDeg">0°</span>
+            <span class="compass-dir" id="compassDir">N</span>
+          </div>
+        </div>
+        <div class="compass-right">
+          <div class="weather-cell" id="weatherBox">
+            <span style="color:var(--text2);font-family:var(--fd);font-size:.72em;">METEO…</span>
+          </div>
+          <div class="gps-coords-box">
+            <div class="gps-signal-row">
+              <div class="gps-bars">
+                <div class="gps-bar" id="gb1"></div>
+                <div class="gps-bar" id="gb2"></div>
+                <div class="gps-bar" id="gb3"></div>
+                <div class="gps-bar" id="gb4"></div>
+                <div class="gps-bar" id="gb5"></div>
+              </div>
+              <div class="gps-quality-txt" id="gpsQualTxt">—</div>
+            </div>
+            <div class="coords" id="coords">In attesa…</div>
+          </div>
+          <div class="idle-box">
+            <div class="idle-lbl">FERMO DA</div>
+            <div class="idle-val" id="idleVal">—</div>
+            <div class="idle-bar-wrap"><div class="idle-bar" id="idleBar"></div></div>
+            <div class="idle-lbl" style="margin-top:.2em">STOP AUTO › 60s</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Altimetro -->
+      <div class="altimeter-col">
+        <div class="alt-title">ALTIMETRO</div>
+        <div class="alt-instrument">
+          <div class="alt-tape-wrap" id="altTapeWrap">
+            <div class="alt-tape" id="altTape"></div>
+          </div>
+          <div class="alt-pointer">
+            <div class="alt-pointer-arrow"></div>
+            <div class="alt-pointer-line"></div>
+          </div>
+          <div class="alt-trend" id="altTrend"></div>
+        </div>
+        <div class="alt-readout">
+          <span class="alt-val" id="altVal">0</span>
+          <span class="alt-m">m slm</span>
+        </div>
+      </div>
+
+      <!-- Barra metriche -->
+      <div class="metrics-bar">
+        <div class="mcard" style="--acc:var(--acc3)">
+          <div class="mlbl">TEMPO VIAGGIO</div>
+          <div class="mval" id="mTime">00:00:00</div>
+        </div>
+        <div class="mcard" style="--acc:var(--acc4)">
+          <div class="mlbl">DISTANZA</div>
+          <div class="mval" id="mDist">0 m</div>
+        </div>
+        <div class="elev-card">
+          <div class="elev-side">
+            <div class="elev-lbl">▲ DISLIVELLO +</div>
+            <div class="elev-val elev-pos" id="elevPos">0 m</div>
+          </div>
+          <div class="elev-divider"></div>
+          <div class="elev-side" style="padding-left:.35em">
+            <div class="elev-lbl">▼ DISLIVELLO −</div>
+            <div class="elev-val elev-neg" id="elevNeg">0 m</div>
+          </div>
+        </div>
+        <div class="mcard" style="--acc:var(--acc2)">
+          <div class="mlbl">QUOTA</div>
+          <div class="mval" id="mAltBot">0 m</div>
+        </div>
+      </div>
+
+      <div class="gps-err" id="gpsErr" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ══ LOGGER ══ -->
+  <div class="screen" id="s1">
+    <div class="log-layout">
+      <div class="log-left">
+        <div class="log-hdr">
+          <div class="sec-title">DATA LOGGER</div>
+          <div class="log-badge" id="fbBadge">⏳ Connessione…</div>
+        </div>
+        <div class="notice" id="fbNotice" style="display:none">⚠️ Firebase offline — salvataggio locale attivo.</div>
+        <div class="auto-info">🤖 <strong>Auto:</strong> parte a &gt;5 km/h · stop dopo 60s fermo o alla chiusura.</div>
+        <div>
+          <div class="notes-lbl">NOTE SESSIONE</div>
+          <input class="notes-in" id="notesIn" placeholder="es. Giro delle Dolomiti…"/>
+        </div>
+        <div class="lstats">
+          <div class="lstat"><div class="lstat-v" id="lPts">0</div><div class="lstat-l">PUNTI LOG</div></div>
+          <div class="lstat"><div class="lstat-v">5s</div><div class="lstat-l">FREQUENZA</div></div>
+          <div class="lstat"><div class="lstat-v" id="lSync" style="color:#888">—</div><div class="lstat-l">CLOUD SYNC</div></div>
+          <div class="lstat"><div class="lstat-v" id="lStatus">—</div><div class="lstat-l">STATO</div></div>
+        </div>
+        <div class="saved-ok" id="savedOk" style="display:none">✅ Sessione salvata!</div>
+        <div class="saved-ok" id="emailOk" style="display:none;border-color:rgba(0,212,255,.3);color:var(--acc2);">📧 Email in invio…</div>
+      </div>
+      <div class="log-right">
+        <div class="live-box">
+          <div class="live-t">● DATI IN TEMPO REALE</div>
+          <div class="live-grid">
+            <span class="lk">Velocità</span><span class="lv" id="lvSpeed">—</span>
+            <span class="lk">Quota</span><span class="lv" id="lvAlt">—</span>
+            <span class="lk">Heading</span><span class="lv" id="lvHead">—</span>
+            <span class="lk">Temperatura</span><span class="lv" id="lvTemp">—</span>
+            <span class="lk">Dislivello +</span><span class="lv" id="lvElevP">—</span>
+            <span class="lk">Dislivello −</span><span class="lv" id="lvElevN">—</span>
+            <span class="lk">Latitudine</span><span class="lv" id="lvLat">—</span>
+            <span class="lk">Longitudine</span><span class="lv" id="lvLon">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HISTORY ══ -->
+  <div class="screen" id="s2">
+    <div class="history-wrap">
+      <div style="font-family:var(--fd);font-size:.72em;letter-spacing:.2em;color:var(--text2);margin-bottom:.6em;">CRONOLOGIA SESSIONI</div>
+      <div id="histContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+// ══════════════════════════════════════════════════
+// RESPONSIVE: scala font-size base da viewport reale
+// Target device: 1024×600 → base=12px
+// Formula: base = max(9, min(15, vw*0.0118 + vh*0.0067))
+// ══════════════════════════════════════════════════
+function scaleUI(){
+  const vw=window.innerWidth, vh=window.innerHeight;
+  // Su schermo EKIY 1024x600: vw*0.0118=12.1, vh*0.0067=4 → ~12px
+  // Su telefono 360x640:      vw*0.0118=4.2,  vh*0.0067=4.3 → 9px (min)
+  // Su tablet 1280x800:       → ~14px
+  const base = Math.max(9, Math.min(15, vw*0.0118 + vh*0.007));
+  document.documentElement.style.fontSize = base + 'px';
+}
+scaleUI();
+window.addEventListener('resize', scaleUI);
+
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getFirestore,collection,addDoc,doc,setDoc,updateDoc,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const FB_CFG={apiKey:"AIzaSyBmCC24qh7kcQWe1j_UjVFG7hddiqGXRk8",authDomain:"t7-datalogger.firebaseapp.com",projectId:"t7-datalogger",storageBucket:"t7-datalogger.firebasestorage.app",messagingSenderId:"444731347089",appId:"1:444731347089:web:eaac804d5f9ae44242ef30"};
+let db=null;
+try{db=getFirestore(initializeApp(FB_CFG));document.getElementById("fbBadge").textContent="☁️ Firebase attivo";document.getElementById("fbBadge").style.color="#a8ff78";}
+catch(e){document.getElementById("fbBadge").textContent="📴 Solo locale";document.getElementById("fbBadge").style.color="#ffcc00";document.getElementById("fbNotice").style.display="block";}
+
+const THEMES=[{f:0,t:6,cls:"theme-notte",name:"🌙 NOTTE"},{f:6,t:8,cls:"theme-alba",name:"🌅 ALBA"},{f:8,t:18,cls:"theme-giorno",name:"☀️ GIORNO"},{f:18,t:20,cls:"theme-tramonto",name:"🌆 TRAMONTO"},{f:20,t:24,cls:"theme-sera",name:"🌃 SERA"}];
+function applyTheme(){const h=new Date().getHours();const th=THEMES.find(x=>h>=x.f&&h<x.t)||THEMES[0];document.body.className=th.cls;document.getElementById("themeBadge").textContent=th.name;}
+applyTheme();setInterval(applyTheme,60000);
+
+const SEVERE_WMO=new Set([55,65,67,75,77,80,81,82,85,86,95,96,99]);
+const WMO_DESC={0:"Sereno",1:"Poco nuvoloso",2:"Nuvoloso",3:"Coperto",45:"Nebbia",51:"Pioggerella",53:"Pioggerella",55:"Pioggerella int.",61:"Pioggia lieve",63:"Pioggia",65:"Pioggia intensa ⚠",71:"Neve lieve",73:"Neve",75:"Neve intensa ⚠",80:"Rovesci",81:"Rovesci ⚠",82:"Rovesci violenti ⚠",95:"Temporale ⚠",96:"Temporale+grandine ⚠",99:"Temporale forte ⚠"};
+const WMO_ICON={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"❄️",80:"🌦️",81:"🌧️",82:"⛈️",95:"⛈️",96:"⛈️",99:"⛈️"};
+let alertDismissed=false;
+function checkWeatherAlert(code){if(SEVERE_WMO.has(code)&&!alertDismissed){document.getElementById("alertText").textContent=(WMO_ICON[code]||"⚠️")+" "+(WMO_DESC[code]||"Condizioni avverse")+" — Prudenza!";document.getElementById("weatherAlert").classList.add("on");}else if(!SEVERE_WMO.has(code)){document.getElementById("weatherAlert").classList.remove("on");alertDismissed=false;}}
+window.closeAlert=function(){document.getElementById("weatherAlert").classList.remove("on");alertDismissed=true;};
+
+const DIRS=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
+const SPD_THR=5,IDLE_STOP=60;
+const S={speed:0,alt:0,lat:null,lon:null,heading:null,accuracy:null,compass:0,weather:null,trip:{on:false,start:null,dist:0,elapsed:0,maxSpd:0},elevPos:0,elevNeg:0,prevAlt:null,altHistory:[],log:{on:false,sid:null,pts:0,buf:[],place:null},prevPos:null,lastMove:Date.now(),_weather:0};
+
+const deg2dir=d=>DIRS[Math.round(d/22.5)%16];
+function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180;const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function fmtTime(ms){if(!ms)return"00:00:00";const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return[h,m,sc].map(v=>String(v).padStart(2,"0")).join(":");}
+function fmtDist(m){return m>=1000?(m/1000).toFixed(2)+" km":Math.round(m)+" m";}
+
+// ── Altimetro ─────────────────────────────────────────
+function buildAltTape(){
+  const tape=document.getElementById("altTape");if(!tape)return;
+  const minAlt=-100,maxAlt=4500,PX=4;
+  const totalH=(maxAlt-minAlt)*PX;tape.style.height=totalH+"px";
+  let html="";
+  for(let a=minAlt;a<=maxAlt;a+=10){
+    const maj=(a%50===0);
+    const top=totalH-(a-minAlt)*PX-10;
+    html+=`<div class="alt-tick" style="top:${top}px"><div class="alt-tick-line${maj?" major":""}"></div>${maj?`<span class="alt-tick-num">${a}</span>`:""}</div>`;
+  }
+  tape.innerHTML=html;
+}
+buildAltTape();
+function updateAltTape(alt){
+  const wrap=document.getElementById("altTapeWrap"),tape=document.getElementById("altTape");if(!wrap||!tape)return;
+  const minAlt=-100,PX=4,wrapH=wrap.clientHeight||200;
+  const tapeH=tape.clientHeight||parseInt(tape.style.height)||18400;
+  tape.style.transform=`translateY(${-(tapeH-(alt-minAlt)*PX-wrapH/2)}px)`;
+  document.getElementById("altVal").textContent=Math.round(alt);
+}
+function getAltTrend(){const h=S.altHistory;if(h.length<3)return"";const d=h[h.length-1]-h[h.length-3];return d>3?"↑":d<-3?"↓":"→";}
+
+// ── GPS — permesso esplicito ──────────────────────────
+window.requestGPS=function(){
+  const overlay=document.getElementById("gpsOverlay");
+  const errEl=document.getElementById("gpsOverlayErr");
+  errEl.style.display="none";
+
+  // Chrome blocca geolocation su file:// — serve HTTP
+  if(location.protocol==="file:"){
+    document.getElementById("gpsOverlayTitle").textContent="⚠️ Apri via HTTP";
+    document.getElementById("gpsOverlayMsg").innerHTML=
+      `Chrome blocca il GPS su file://.<br><br>`+
+      `<strong>Metodo 1 (più semplice):</strong><br>`+
+      `Copia il percorso del file, apri il terminale e lancia:<br>`+
+      `<code style="background:rgba(255,255,255,.1);padding:.2em .5em;border-radius:4px;font-size:.85em">`+
+      `python3 -m http.server 8080</code><br>`+
+      `poi apri Chrome su <code style="background:rgba(255,255,255,.1);padding:.2em .5em;border-radius:4px">http://localhost:8080/T7-Datalogger.html</code><br><br>`+
+      `<strong>Metodo 2 (solo test):</strong><br>`+
+      `In Chrome vai su <code style="background:rgba(255,255,255,.1);padding:.2em .5em;border-radius:4px">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>,<br>`+
+      `aggiungi <code style="background:rgba(255,255,255,.1);padding:.2em .5em;border-radius:4px">file://</code> e riavvia.`;
+    document.getElementById("gpsOverlayBtn").style.display="none";
+    errEl.style.display="none";
+    return;
+  }
+
+  if(!navigator.geolocation){
+    errEl.textContent="Geolocalizzazione non supportata da questo browser.";
+    errEl.style.display="block";return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      overlay.classList.remove("on");
+      onGPSPos(pos);
+      navigator.geolocation.watchPosition(onGPSPos,onGPSErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+    },
+    err=>{
+      let msg="❌ "+err.message;
+      if(err.code===1) msg="❌ Permesso negato. Tocca l'icona 🔒 in alto e consenti la posizione.";
+      if(err.code===2) msg="⚠️ Segnale GPS non disponibile. Prova all'aperto.";
+      if(err.code===3) msg="⏱ Timeout GPS. Riprova.";
+      errEl.textContent=msg;
+      errEl.style.display="block";
+    },
+    {enableHighAccuracy:true,timeout:20000}
+  );
+};
+
+function onGPSPos(pos){
+  const{latitude:la,longitude:lo,altitude:al,speed:sp,heading:hd,accuracy:ac}=pos.coords;
+  S.speed=sp!=null?sp*3.6:0;S.alt=al??0;S.lat=la;S.lon=lo;S.heading=hd;S.accuracy=ac;
+  if(S.speed>1)S.lastMove=Date.now();
+  if(S.prevAlt!==null&&al!=null){const diff=(al??0)-S.prevAlt;if(diff>0.5)S.elevPos+=diff;else if(diff<-0.5)S.elevNeg+=Math.abs(diff);}
+  if(al!=null)S.prevAlt=al;
+  S.altHistory.push(S.alt);if(S.altHistory.length>10)S.altHistory.shift();
+  if(S.trip.on){if(S.prevPos)S.trip.dist+=haversine(S.prevPos.lat,S.prevPos.lon,la,lo);S.prevPos={lat:la,lon:lo};S.trip.maxSpd=Math.max(S.trip.maxSpd,S.speed);}
+  if(Date.now()-S._weather>300000){
+    S._weather=Date.now();
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,weathercode,windspeed_10m&wind_speed_unit=kmh`)
+      .then(r=>r.json()).then(d=>{const c=d.current;S.weather={temp:Math.round(c.temperature_2m),wind:Math.round(c.windspeed_10m),code:c.weathercode};renderWeather();checkWeatherAlert(c.weathercode);}).catch(()=>{});
+  }
+  document.getElementById("gpsDot").className="dot ok";
+  document.getElementById("gpsErr").style.display="none";
+  checkAuto();render();
+}
+function onGPSErr(err){
+  document.getElementById("gpsDot").className="dot err";
+  const el=document.getElementById("gpsErr");el.style.display="block";el.textContent="⚠️ "+err.message;
+}
+
+setInterval(()=>{if(S.trip.on)S.trip.elapsed=Date.now()-S.trip.start;const idle=Math.floor((Date.now()-S.lastMove)/1000);if(S.log.on&&idle>=IDLE_STOP)stopLog("fermo >60s");render();},1000);
+
+window.addEventListener("deviceorientationabsolute",e=>{if(e.absolute&&e.alpha!=null)S.compass=Math.round(360-e.alpha);},true);
+window.addEventListener("deviceorientation",e=>{const v=e.webkitCompassHeading??(e.absolute?Math.round(360-e.alpha):null);if(v!=null)S.compass=Math.round(v);},true);
+
+function checkAuto(){if(!S.log.on&&S.speed>SPD_THR)startLog();}
+window.addEventListener("beforeunload",()=>{if(S.log.on)stopLog("chiusura app");});
+window.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&S.log.on)stopLog("chiusura app");});
+
+function render(){
+  const spd=Math.round(S.speed),alt=Math.round(S.alt),hdg=S.heading??S.compass;
+  const idle=Math.floor((Date.now()-S.lastMove)/1000);
+  document.getElementById("speedVal").textContent=spd;
+  if(S.trip.maxSpd>0)document.getElementById("speedMax").textContent="MAX "+Math.round(S.trip.maxSpd)+" km/h";
+  updateAltTape(S.alt);
+  document.getElementById("altTrend").textContent=getAltTrend();
+  document.getElementById("needleWrap").style.transform=`rotate(${hdg}deg)`;
+  document.getElementById("compassDeg").textContent=hdg+"°";
+  document.getElementById("compassDir").textContent=deg2dir(hdg);
+  document.getElementById("mTime").textContent=fmtTime(S.trip.elapsed);
+  document.getElementById("mDist").textContent=fmtDist(S.trip.dist);
+  document.getElementById("elevPos").textContent="+"+Math.round(S.elevPos)+" m";
+  document.getElementById("elevNeg").textContent="-"+Math.round(S.elevNeg)+" m";
+  const mAB=document.getElementById("mAltBot");if(mAB)mAB.textContent=alt+" m";
+  // GPS bars
+  const acc=S.accuracy;let bars=0,gpsColor="#444",gpsLabel="—";
+  if(acc!==null){if(acc<10){bars=5;gpsColor="#44ff88";gpsLabel="OTTIMO";}else if(acc<20){bars=4;gpsColor="#a8ff78";gpsLabel="BUONO";}else if(acc<40){bars=3;gpsColor="#ffcc00";gpsLabel="MEDIO";}else if(acc<80){bars=2;gpsColor="#ff8800";gpsLabel="SCARSO";}else{bars=1;gpsColor="#ff4e00";gpsLabel="PESSIMO";}}
+  document.documentElement.style.setProperty("--gps-color",gpsColor);
+  for(let i=1;i<=5;i++){const el=document.getElementById("gb"+i);if(el)el.classList.toggle("lit",i<=bars);}
+  const qt=document.getElementById("gpsQualTxt");if(qt){qt.textContent=gpsLabel;qt.style.color=gpsColor;}
+  if(S.lat)document.getElementById("coords").textContent=`${S.lat.toFixed(5)}\n${S.lon.toFixed(5)}`;
+  const idlePct=Math.min(100,(idle/IDLE_STOP)*100);
+  document.getElementById("idleVal").textContent=S.log.on?idle+"s":"—";
+  document.getElementById("idleBar").style.width=S.log.on?idlePct+"%":"0%";
+  document.getElementById("idleBar").style.background=S.log.on?`hsl(${Math.round(120-idlePct*1.2)},90%,55%)`:"var(--acc4)";
+  document.getElementById("recDot").className="rec-dot"+(S.log.on?" on":"");
+  document.getElementById("autoBadge").className="auto-badge"+(S.log.on?" on":"");
+  document.getElementById("lvSpeed").textContent=spd+" km/h";
+  document.getElementById("lvAlt").textContent=alt+" m";
+  document.getElementById("lvHead").textContent=hdg+"°";
+  document.getElementById("lvTemp").textContent=S.weather?S.weather.temp+"°C":"—";
+  document.getElementById("lvElevP").textContent="+"+Math.round(S.elevPos)+" m";
+  document.getElementById("lvElevN").textContent="-"+Math.round(S.elevNeg)+" m";
+  document.getElementById("lvLat").textContent=S.lat?.toFixed(5)??"—";
+  document.getElementById("lvLon").textContent=S.lon?.toFixed(5)??"—";
+  document.getElementById("lPts").textContent=S.log.pts;
+  document.getElementById("lStatus").textContent=S.log.on?"● REC":"⏸ ATTESA";
+  document.getElementById("lStatus").style.color=S.log.on?"var(--acc1)":"#888";
+}
+
+function renderWeather(){
+  const w=S.weather;if(!w)return;
+  const isAlert=SEVERE_WMO.has(w.code);
+  document.getElementById("weatherBox").innerHTML=`<span class="w-icon-big">${WMO_ICON[w.code]??"🌡️"}</span><div class="w-data"><div class="w-temp">${w.temp}°C</div><div class="w-wind">💨 ${w.wind} km/h</div><div class="w-desc">${WMO_DESC[w.code]||"—"}</div></div>${isAlert?`<span class="w-alert-btn on" onclick="showAlert()">⚠️</span>`:""}`;
+}
+window.showAlert=function(){if(S.weather)checkWeatherAlert(S.weather.code);};
+
+async function getPlace(la,lo){try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&zoom=10`,{headers:{"Accept-Language":"it"}});const d=await r.json(),a=d.address;return(a.town||a.city||a.village||a.municipality||a.county||"Luogo").replace(/[\/\\:*?"<>|,]/g,"").trim();}catch{return"Luogo";}}
+function buildName(place,distM){const n=new Date();const dd=String(n.getDate()).padStart(2,"0"),mm=String(n.getMonth()+1).padStart(2,"0"),yyyy=n.getFullYear();const km=distM>=1000?(distM/1000).toFixed(1)+"km":Math.round(distM)+"m";return`${dd}-${mm}-${yyyy}_${place}_${km}`;}
+
+emailjs.init("1uP_ThQuMmekBnvor");
+function buildCSV(buf){const h=["timestamp","lat","lon","speed_kmh","altitude_m","heading","accuracy","temp_c","wind_kmh","distance_m","elapsed_ms","elev_pos_m","elev_neg_m"].join(",");const rows=(buf||[]).map(p=>[new Date(p.ts).toISOString(),p.lat,p.lon,p.speed,p.altitude,p.heading,p.accuracy,p.temp,p.wind,p.distance,p.elapsed,p.elevPos,p.elevNeg].join(","));return[h,...rows].join("\n");}
+async function sendEmail(summary,buf){
+  const el=document.getElementById("emailOk");el.style.display="block";el.textContent="📧 Invio email…";
+  try{const csv=buildCSV(buf);const csvT=csv.length>40000?csv.substring(0,40000)+"\n...(troncato)":csv;
+    await emailjs.send("T7mail","template_hctjwkg",{to_email:"zeno.tamburini@gmail.com",file_name:summary.fileName,start_place:summary.fileName.split("_")[1]||"—",distance:summary.totalDistance>=1000?(summary.totalDistance/1000).toFixed(1)+" km":summary.totalDistance+" m",duration:fmtTime(summary.elapsed),max_speed:summary.maxSpeed+" km/h",elev_pos:"+"+summary.elevPos+" m",elev_neg:"-"+summary.elevNeg+" m",csv_data:csvT});
+    el.textContent="✅ Email inviata!";el.style.borderColor="rgba(168,255,120,.3)";el.style.color="var(--acc3)";
+  }catch{el.textContent="⚠️ Email non inviata";el.style.borderColor="rgba(255,78,0,.3)";el.style.color="var(--acc1)";}
+}
+
+let logIv=null;
+async function startLog(){
+  if(S.log.on)return;const sid="session_"+Date.now();
+  if(!S.trip.on){S.trip={on:true,start:Date.now(),dist:0,elapsed:0,maxSpd:0};S.elevPos=0;S.elevNeg=0;S.prevAlt=S.alt||null;S.prevPos=S.lat?{lat:S.lat,lon:S.lon}:null;}
+  S.log={on:true,sid,pts:0,buf:[],place:null};document.getElementById("savedOk").style.display="none";
+  const sl=S.lat,slo=S.lon;if(sl)getPlace(sl,slo).then(p=>{S.log.place=p;});
+  const meta={startedAt:new Date().toISOString(),startLat:sl,startLon:slo,notes:document.getElementById("notesIn").value};
+  if(db)setDoc(doc(db,"sessions",sid),{...meta,createdAt:serverTimestamp()}).catch(()=>{});
+  logIv=setInterval(async()=>{
+    if(!S.lat)return;
+    const pt={ts:Date.now(),lat:S.lat,lon:S.lon,speed:Math.round(S.speed*10)/10,altitude:Math.round(S.alt*10)/10,heading:S.heading??S.compass,accuracy:S.accuracy,temp:S.weather?.temp??null,wind:S.weather?.wind??null,distance:Math.round(S.trip.dist),elapsed:S.trip.elapsed,elevPos:Math.round(S.elevPos),elevNeg:Math.round(S.elevNeg)};
+    S.log.pts++;S.log.buf.push(pt);
+    if(db){try{await addDoc(collection(db,"sessions",sid,"points"),pt);document.getElementById("lSync").textContent="✓ sync";document.getElementById("lSync").style.color="#a8ff78";}catch{document.getElementById("lSync").textContent="⚠ errore";document.getElementById("lSync").style.color="#ff4e00";}}
+  },5000);
+}
+async function stopLog(reason){
+  if(!S.log.on)return;clearInterval(logIv);
+  const sid=S.log.sid,place=S.log.place||"Luogo",fileName=buildName(place,S.trip.dist);
+  const summary={endedAt:new Date().toISOString(),totalPoints:S.log.pts,totalDistance:Math.round(S.trip.dist),elapsed:S.trip.elapsed,maxSpeed:Math.round(S.trip.maxSpd),elevPos:Math.round(S.elevPos),elevNeg:Math.round(S.elevNeg),notes:document.getElementById("notesIn").value,stopReason:reason||"manuale",fileName};
+  if(db)updateDoc(doc(db,"sessions",sid),summary).catch(()=>{});
+  const arr=JSON.parse(localStorage.getItem("t7log")||"[]");arr.push({id:sid,...summary,buffer:S.log.buf});localStorage.setItem("t7log",JSON.stringify(arr));
+  S.log.on=false;S.trip.on=false;document.getElementById("lSync").textContent="—";
+  const ok=document.getElementById("savedOk");ok.style.display="block";ok.textContent=`✅ Salvata: ${fileName}`;
+  sendEmail(summary,S.log.buf);
+}
+
+window.showTab=function(i){document.querySelectorAll(".screen").forEach((s,j)=>s.classList.toggle("on",j===i));document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("on",j===i));if(i===2)renderHistory();};
+
+function fmtT(ms){if(!ms)return"—";const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return[h,m,sc].map(v=>String(v).padStart(2,"0")).join(":");}
+function renderHistory(){
+  const sessions=JSON.parse(localStorage.getItem("t7log")||"[]").slice().reverse();
+  const el=document.getElementById("histContent");
+  if(!sessions.length){el.innerHTML='<div class="empty">Nessuna sessione.<br>🏍️ Guida oltre 5 km/h per registrare!</div>';return;}
+  el.innerHTML='<div class="slist">'+sessions.map((s,i)=>`
+    <div class="scard" id="sc${i}">
+      <div class="shdr" onclick="toggleCard(${i})">
+        <div class="sdate">${s.fileName||s.id}</div>
+        <div class="pills">
+          <span class="pill">${s.totalDistance>=1000?(s.totalDistance/1000).toFixed(1)+" km":s.totalDistance+" m"}</span>
+          <span class="pill">${fmtT(s.elapsed)}</span>
+          <span class="pill">⚡${s.maxSpeed??'—'} km/h</span>
+          <span class="pill">▲${s.elevPos??'—'}m ▼${s.elevNeg??'—'}m</span>
+        </div>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sbody" id="sb${i}" style="display:none">
+        ${s.notes?`<div class="snotes">📝 ${s.notes}</div>`:""}
+        <div class="smeta">
+          <span>Punti: <strong>${s.totalPoints??s.buffer?.length??'—'}</strong></span>
+          <span>Stop: <strong>${s.stopReason||"—"}</strong></span>
+          <span>${s.endedAt?new Date(s.endedAt).toLocaleString("it-IT"):"—"}</span>
+        </div>
+        <div class="sactions">
+          <button class="abtn" onclick="exportCSV(${i})">⬇ CSV</button>
+          <button class="abtn" onclick="exportGPX(${i})">⬇ GPX</button>
+          <button class="abtn del" onclick="delSession(${i})">🗑</button>
+        </div>
+      </div>
+    </div>`).join("")+"</div>";
+}
+window.toggleCard=function(i){const b=document.getElementById("sb"+i);const open=b.style.display==="none";b.style.display=open?"flex":"none";document.getElementById("sc"+i).classList.toggle("open",open);};
+window.exportCSV=function(i){const s=JSON.parse(localStorage.getItem("t7log")||"[]").slice().reverse()[i];const rows=[["timestamp","lat","lon","speed_kmh","altitude_m","heading","accuracy","temp_c","wind_kmh","distance_m","elapsed_ms","elev_pos_m","elev_neg_m"],...(s.buffer||[]).map(p=>[new Date(p.ts).toISOString(),p.lat,p.lon,p.speed,p.altitude,p.heading,p.accuracy,p.temp,p.wind,p.distance,p.elapsed,p.elevPos,p.elevNeg])];dl(rows.map(r=>r.join(",")).join("\n"),"text/csv",(s.fileName||s.id)+".csv");};
+window.exportGPX=function(i){const s=JSON.parse(localStorage.getItem("t7log")||"[]").slice().reverse()[i];const pts=(s.buffer||[]).filter(p=>p.lat&&p.lon).map(p=>`  <trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.altitude??0}</ele><time>${new Date(p.ts).toISOString()}</time></trkpt>`).join("\n");dl(`<?xml version="1.0"?><gpx version="1.1" creator="T7 Datalogger"><trk><n>${s.fileName||s.id}</n><trkseg>\n${pts}\n</trkseg></trk></gpx>`,"application/gpx+xml",(s.fileName||s.id)+".gpx");};
+window.delSession=function(i){if(!confirm("Eliminare?"))return;const arr=JSON.parse(localStorage.getItem("t7log")||"[]").slice().reverse();arr.splice(i,1);localStorage.setItem("t7log",JSON.stringify(arr.reverse()));renderHistory();};
+function dl(content,mime,name){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=name;a.click();}
+
+window.addEventListener("resize",()=>{buildAltTape();updateAltTape(S.alt);});
+
+// Rileva subito se siamo su file:// e aggiorna overlay di conseguenza
+(function checkProtocol(){
+  if(location.protocol==="file:"){
+    document.getElementById("gpsOverlayTitle").textContent="⚠️ GPS non disponibile su file://";
+    document.getElementById("gpsOverlayMsg").innerHTML=
+      `Chrome blocca il GPS sui file locali.<br><br>`+
+      `<strong>Soluzione rapida — apri Terminale e lancia:</strong><br>`+
+      `<code style="display:inline-block;margin:.4em 0;background:rgba(255,255,255,.12);padding:.3em .7em;border-radius:5px;font-size:.88em;letter-spacing:.03em">`+
+      `python3 -m http.server 8080</code><br>`+
+      `poi in Chrome vai su:<br>`+
+      `<code style="display:inline-block;margin:.4em 0;background:rgba(255,255,255,.12);padding:.3em .7em;border-radius:5px;font-size:.88em">`+
+      `http://localhost:8080/T7-Datalogger.html</code><br><br>`+
+      `<span style="color:var(--text3);font-size:.85em">Su Android: copia il file in una cartella accessibile e usa un'app server locale come <em>Simple HTTP Server</em>.</span>`;
+    document.getElementById("gpsOverlayBtn").textContent="OK, ho capito";
+    document.getElementById("gpsOverlayBtn").onclick=()=>document.getElementById("gpsOverlay").classList.remove("on");
+    document.getElementById("gpsOverlayBtn").style.display="block";
+  }
+})();
+
+render();
+</script>
+</body>
+</html>
